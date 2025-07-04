@@ -4,8 +4,6 @@ import { AiInsights } from '@/components/dashboard/ai-insights';
 import { getSpendingByCategory, getTotalSpending, getBudgets } from '@/lib/mock-data';
 import { BudgetSummary } from '@/components/dashboard/budget-summary';
 
-export const dynamic = 'force-dynamic';
-
 export default function DashboardPage() {
   // In a real app, this data would be fetched for the logged-in user
   const totalSpending = getTotalSpending({ month: 'current' });

@@ -3,8 +3,6 @@ import { Button } from '@/components/ui/button';
 import Link from 'next/link';
 import { ReceiptsList } from '@/components/receipts/receipts-list';
 
-export const dynamic = 'force-dynamic';
-
 export default function ReceiptsPage() {
   // In a real app, this data would be fetched for the logged-in user
   const receipts = getReceipts();

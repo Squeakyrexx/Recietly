@@ -3,8 +3,6 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { BudgetForm } from "@/components/budgets/budget-form";
 import { CATEGORIES } from "@/lib/types";
 
-export const dynamic = 'force-dynamic';
-
 export default function BudgetsPage() {
   const initialBudgets = getBudgets();
   const spendingThisMonth = getSpendingByCategory({ month: 'current' });
