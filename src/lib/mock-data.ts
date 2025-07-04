@@ -17,7 +17,7 @@ if (!globalForStore.receipts) {
     globalForStore.receipts = [];
 }
 if (!globalForStore.budgets) {
-    globalForStore.budgets = CATEGORIES.reduce((acc, cat) => ({...acc, [cat]: 0}), {});
+    globalForStore.budgets = CATEGORIES.reduce((acc, cat) => ({...acc, [cat]: 0}), {} as { [key in Category]?: number });
 }
 
 export const getReceipts = (): Receipt[] => {
@@ -26,16 +26,12 @@ export const getReceipts = (): Receipt[] => {
 };
 
 export const addReceipt = (receipt: Omit<Receipt, 'id'>) => {
-    // By replacing hyphens with slashes, we parse the date in the local timezone,
-    // which avoids "off-by-one-day" errors across different timezones.
     const d = new Date(receipt.date.replace(/-/g, '/'));
     const isValidDate = !isNaN(d.getTime());
     
     const newReceipt: Receipt = {
-        id: (globalForStore.receipts!.length + 1).toString() + Date.now(), // Make ID more unique
+        id: Date.now().toString() + Math.random().toString(36), // Make ID more unique
         ...receipt,
-        // The date from the form is a string like 'YYYY-MM-DD'.
-        // If the date is invalid, we default to the current date to avoid a crash.
         date: isValidDate ? receipt.date : new Date().toISOString().split('T')[0],
     };
     globalForStore.receipts!.unshift(newReceipt); // Add to the beginning of the array
@@ -52,16 +48,21 @@ export const deleteReceipt = (id: string) => {
     globalForStore.receipts = globalForStore.receipts!.filter(r => r.id !== id);
 }
 
+const getMonthDateRange = () => {
+    const now = new Date();
+    const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1);
+    const endOfMonth = new Date(now.getFullYear(), now.getMonth() + 1, 0);
+    endOfMonth.setHours(23, 59, 59, 999); // Ensure to include the entire last day
+    return { startOfMonth, endOfMonth };
+}
+
 export const getSpendingByCategory = ({ month }: { month: 'current' | 'all' }): SpendingByCategory[] => {
   const spendingMap: { [key: string]: number } = {};
   
   let receiptsToProcess = getReceipts();
   
   if (month === 'current') {
-    const now = new Date();
-    const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1);
-    const endOfMonth = new Date(now.getFullYear(), now.getMonth() + 1, 0);
-    endOfMonth.setHours(23, 59, 59, 999); // Make sure to include the entire last day of the month
+    const { startOfMonth, endOfMonth } = getMonthDateRange();
     
     receiptsToProcess = receiptsToProcess.filter(r => {
         // By replacing hyphens with slashes, we parse the date in the local timezone,
@@ -88,14 +89,9 @@ export const getSpendingByCategory = ({ month }: { month: 'current' | 'all' }): 
 export const getTotalSpending = ({ month }: { month: 'current' | 'all' }): number => {
     let receiptsToProcess = getReceipts();
     if (month === 'current') {
-        const now = new Date();
-        const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1);
-        const endOfMonth = new Date(now.getFullYear(), now.getMonth() + 1, 0);
-        endOfMonth.setHours(23, 59, 59, 999); // Make sure to include the entire last day of the month
+        const { startOfMonth, endOfMonth } = getMonthDateRange();
 
         receiptsToProcess = receiptsToProcess.filter(r => {
-            // By replacing hyphens with slashes, we parse the date in the local timezone,
-            // which avoids "off-by-one-day" errors across different timezones.
             const receiptDate = new Date(r.date.replace(/-/g, '/'));
             return receiptDate >= startOfMonth && receiptDate <= endOfMonth;
         });

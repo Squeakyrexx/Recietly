@@ -48,12 +48,6 @@ const receiptDataSchema = z.object({
   description: z.string().optional(),
 });
 
-const saveSchema = z.object({
-  receiptData: receiptDataSchema,
-  photoDataUri: z.string().nullable(), // Allow null for manual entry
-});
-
-
 export async function saveReceiptAction({ receiptData, photoDataUri }: { receiptData: ExtractedReceiptData, photoDataUri: string | null }) {
   const validated = receiptDataSchema.safeParse(receiptData);
 
@@ -72,6 +66,7 @@ export async function saveReceiptAction({ receiptData, photoDataUri }: { receipt
   
   addReceipt({ ...receiptToSave, imageDataUri });
   
+  // Revalidate all paths that depend on receipt data
   revalidatePath('/receipts');
   revalidatePath('/dashboard');
   revalidatePath('/budgets');
@@ -100,6 +95,7 @@ export async function updateReceiptAction(receiptData: Receipt) {
   
   updateReceipt(receiptToUpdate);
   
+  // Revalidate all paths that depend on receipt data
   revalidatePath('/receipts');
   revalidatePath('/dashboard');
   revalidatePath('/budgets');
@@ -112,9 +108,12 @@ export async function deleteReceiptAction(id: string) {
         return { success: false, message: 'No ID provided for deletion.' };
     }
     deleteReceipt(id);
+    
+    // Revalidate all paths that depend on receipt data
     revalidatePath('/receipts');
     revalidatePath('/dashboard');
     revalidatePath('/budgets');
+
     return { success: true, message: 'Receipt deleted.' };
 }
 
@@ -145,6 +144,7 @@ export async function setBudgetAction({ category, amount }: { category: Category
 
     setBudget(validated.data);
     
+    // Revalidate paths that depend on budget data
     revalidatePath('/budgets');
     revalidatePath('/dashboard');
     
