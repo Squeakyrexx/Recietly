@@ -6,7 +6,7 @@ import { mockReceipts } from '@/lib/mock-data';
 import { revalidatePath } from 'next/cache';
 import { z } from 'zod';
 
-export async function extractReceiptDataAction(prevState: any, formData: FormData) {
+export async function extractReceiptDataAction(formData: FormData) {
   const photo = formData.get('photo') as File | null;
 
   // More robust validation

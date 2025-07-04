@@ -1,7 +1,7 @@
 'use client';
 
 import { useFormStatus } from 'react-dom';
-import { useActionState, useEffect, useRef, useState, useTransition } from 'react';
+import { useEffect, useRef, useState, useTransition } from 'react';
 import { extractReceiptDataAction, saveReceiptAction } from '@/lib/actions';
 import { useToast } from '@/hooks/use-toast';
 import { Input } from '@/components/ui/input';
@@ -14,7 +14,11 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/com
 import { type ExtractedReceiptData } from '@/lib/types';
 import Image from 'next/image';
 
-const initialState = {
+const initialState: {
+  message: string;
+  data: ExtractedReceiptData | null;
+  errors: { photo?: string[]; _form?: string[] } | null;
+} = {
   message: '',
   data: null,
   errors: null,
@@ -37,7 +41,8 @@ function UploadButton() {
 }
 
 export function UploadForm() {
-  const [extractionState, formAction, isExtracting] = useActionState(extractReceiptDataAction, initialState);
+  const [extractionState, setExtractionState] = useState(initialState);
+  const [isExtracting, startExtractionTransition] = useTransition();
   const { toast } = useToast();
   const formRef = useRef<HTMLFormElement>(null);
   
@@ -47,6 +52,14 @@ export function UploadForm() {
   const [view, setView] = useState<'upload' | 'confirm'>('upload');
   const [receiptData, setReceiptData] = useState<ExtractedReceiptData | null>(null);
   const [isSaving, startSavingTransition] = useTransition();
+
+  const clientAction = (formData: FormData) => {
+    setExtractionState(initialState); // Reset errors on new submission
+    startExtractionTransition(async () => {
+        const result = await extractReceiptDataAction(formData);
+        setExtractionState(result);
+    });
+  };
 
   useEffect(() => {
     if (isExtracting) return; // Don't show toasts while the action is pending
@@ -72,12 +85,14 @@ export function UploadForm() {
     if (selectedFile) {
       setFile(selectedFile);
       setPreviewUrl(URL.createObjectURL(selectedFile));
+      setExtractionState(initialState); // Clear previous errors when a new file is selected
     }
   };
 
   const handleRemoveFile = () => {
     setFile(null);
     setPreviewUrl(null);
+    setExtractionState(initialState);
     if(formRef.current) {
         const fileInput = formRef.current.querySelector('input[type="file"]') as HTMLInputElement;
         if(fileInput) fileInput.value = "";
@@ -183,7 +198,7 @@ export function UploadForm() {
                         </div>
                     </div>
                     <div className="flex flex-col sm:flex-row-reverse gap-3 pt-4">
-                        <Button onClick={handleSave} disabled={isSaving} className="w-full sm:w-auto">
+                        <Button onClick={handleSave} disabled={isSaving || isExtracting} className="w-full sm:w-auto">
                             {isSaving ? <><Loader2 className="mr-2 h-4 w-4 animate-spin" /> Saving...</> : <><Save className="mr-2" /> Save Receipt</>}
                         </Button>
                         <Button variant="outline" onClick={handleDiscard} className="w-full sm:w-auto">
@@ -197,7 +212,7 @@ export function UploadForm() {
   }
 
   return (
-    <form ref={formRef} action={formAction} className="space-y-6">
+    <form ref={formRef} action={clientAction} className="space-y-6">
       <div>
         <Label htmlFor="photo">Receipt Photo</Label>
         <div className="mt-2 flex justify-center rounded-lg border border-dashed border-border px-6 py-10">
@@ -225,7 +240,7 @@ export function UploadForm() {
             </div>
           )}
         </div>
-        {extractionState?.errors?.photo && !isExtracting && <p className="text-sm text-destructive mt-1">{extractionState.errors.photo[0]}</p>}
+        {extractionState?.errors?.photo && <p className="text-sm text-destructive mt-1">{extractionState.errors.photo[0]}</p>}
       </div>
 
        <div className="text-center">
