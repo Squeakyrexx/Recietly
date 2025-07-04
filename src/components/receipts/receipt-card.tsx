@@ -4,6 +4,7 @@ import { type Receipt } from '@/lib/types';
 import { Badge } from '@/components/ui/badge';
 import { getIconForCategory } from '@/components/icons';
 import { format } from 'date-fns';
+import { FileImage } from 'lucide-react';
 
 export function ReceiptCard({ receipt }: { receipt: Receipt }) {
   const Icon = getIconForCategory(receipt.category);
@@ -16,13 +17,19 @@ export function ReceiptCard({ receipt }: { receipt: Receipt }) {
     <Card className="flex flex-col overflow-hidden transition-transform duration-200 hover:scale-105 hover:shadow-lg">
       <CardHeader className="p-0">
         <div className="relative aspect-[4/3] w-full bg-muted">
-          <Image
-            src={receipt.imageDataUri}
-            alt={`Receipt from ${receipt.merchant}`}
-            fill
-            className="object-cover"
-            sizes="(max-width: 640px) 100vw, (max-width: 768px) 50vw, 33vw"
-          />
+          {receipt.imageDataUri ? (
+            <Image
+              src={receipt.imageDataUri}
+              alt={`Receipt from ${receipt.merchant}`}
+              fill
+              className="object-cover"
+              sizes="(max-width: 640px) 100vw, (max-width: 768px) 50vw, 33vw"
+            />
+          ) : (
+            <div className="flex h-full w-full items-center justify-center text-muted-foreground">
+              <FileImage className="h-16 w-16" />
+            </div>
+          )}
         </div>
       </CardHeader>
       <CardContent className="flex-1 p-4">
