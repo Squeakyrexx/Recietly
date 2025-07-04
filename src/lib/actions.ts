@@ -5,7 +5,7 @@ import { generateSpendingInsights as generateSpendingInsightsFlow } from '@/ai/f
 import { addReceipt, getReceipts } from '@/lib/mock-data';
 import { revalidatePath } from 'next/cache';
 import { z } from 'zod';
-import { type ExtractedReceiptData } from './types';
+import { type ExtractedReceiptData, CATEGORIES } from './types';
 
 export async function extractReceiptDataAction(formData: FormData) {
   const photo = formData.get('photo') as File | null;
@@ -59,7 +59,7 @@ const saveSchema = z.object({
   merchant: z.string().min(1, 'Merchant is required.'),
   amount: z.coerce.number().positive('Amount must be positive.'),
   date: z.string().min(1, 'Date is required.'),
-  category: z.string().min(1, 'Category is required.'),
+  category: z.enum(CATEGORIES),
   description: z.string().optional(),
 });
 
@@ -71,9 +71,12 @@ export async function saveReceiptAction({ receiptData }: { receiptData: Extracte
     return { success: false, message: `Invalid data: ${errorMessages}` };
   }
   
-  // In a real app, you would save this to a database.
-  // For now, we add to our in-memory store.
-  addReceipt(validated.data as any);
+  const receiptToSave = {
+    ...validated.data,
+    description: validated.data.description || '', // Ensure description is a string
+  }
+  
+  addReceipt(receiptToSave);
   
   // Revalidate paths to show the new data
   revalidatePath('/receipts');
