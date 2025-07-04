@@ -2,8 +2,12 @@
 
 import { UploadForm } from '@/components/upload/upload-form';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { useAuth } from '@/context/auth-context';
+import { Skeleton } from '@/components/ui/skeleton';
 
 export default function UploadPage() {
+  const { user, loading } = useAuth();
+
   return (
     <div className="mx-auto max-w-2xl space-y-6">
       <header>
@@ -18,7 +22,19 @@ export default function UploadPage() {
           </CardDescription>
         </CardHeader>
         <CardContent>
-          <UploadForm />
+          {loading || !user ? (
+            <div className="space-y-4">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                  <Skeleton className="h-40 rounded-lg" />
+                  <Skeleton className="h-40 rounded-lg" />
+              </div>
+              <div className="text-center">
+                  <Skeleton className="h-4 w-48 mx-auto" />
+              </div>
+            </div>
+          ) : (
+            <UploadForm />
+          )}
         </CardContent>
       </Card>
     </div>
