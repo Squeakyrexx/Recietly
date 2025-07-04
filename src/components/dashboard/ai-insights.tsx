@@ -1,3 +1,4 @@
+
 'use client';
 
 import { useState, useTransition } from 'react';
@@ -6,20 +7,28 @@ import { Button } from '@/components/ui/button';
 import { Lightbulb, Loader2 } from 'lucide-react';
 import { generateSpendingInsightsAction } from '@/lib/actions';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
+import { useAuth } from '@/context/auth-context';
+import { useToast } from '@/hooks/use-toast';
 
 export function AiInsights() {
   const [isPending, startTransition] = useTransition();
   const [insight, setInsight] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const { user } = useAuth();
+  const { toast } = useToast();
 
   const handleGenerateInsight = () => {
+    if (!user) {
+        toast({ title: 'Please log in to use this feature.', variant: 'destructive'});
+        return;
+    }
     startTransition(async () => {
       setError(null);
       setInsight(null);
-      const result = await generateSpendingInsightsAction();
+      const result = await generateSpendingInsightsAction(user.uid);
       if (result.error) {
         setError(result.error);
-      } else {
+      } else if (result.insight) {
         setInsight(result.insight);
       }
     });

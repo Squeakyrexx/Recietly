@@ -1,3 +1,4 @@
+
 'use server';
 
 import { extractReceiptData as extractReceiptDataFlow } from '@/ai/flows/extract-receipt-data';
@@ -49,7 +50,9 @@ const receiptDataSchema = z.object({
   isBusinessExpense: z.boolean().optional(),
 });
 
-export async function saveReceiptAction({ receiptData, photoDataUri }: { receiptData: ExtractedReceiptData & { isBusinessExpense?: boolean }, photoDataUri: string | null }) {
+export async function saveReceiptAction({ userId, receiptData, photoDataUri }: { userId: string, receiptData: ExtractedReceiptData & { isBusinessExpense?: boolean }, photoDataUri: string | null }) {
+  if (!userId) return { success: false, message: 'You must be logged in to save a receipt.'};
+  
   const validated = receiptDataSchema.safeParse(receiptData);
 
   if (!validated.success) {
@@ -65,7 +68,7 @@ export async function saveReceiptAction({ receiptData, photoDataUri }: { receipt
   // Use a placeholder if no image was provided (manual entry)
   const imageDataUri = photoDataUri || `https://placehold.co/600x400.png`;
   
-  await addReceipt({ ...receiptToSave, imageDataUri });
+  await addReceipt(userId, { ...receiptToSave, imageDataUri });
   
   // Revalidate the entire app to ensure all pages get fresh data
   revalidatePath('/', 'layout');
@@ -80,7 +83,9 @@ const updateSchema = z.object({
 }).merge(receiptDataSchema);
 
 
-export async function updateReceiptAction(receiptData: Receipt) {
+export async function updateReceiptAction(userId: string, receiptData: Receipt) {
+  if (!userId) return { success: false, message: 'You must be logged in to update a receipt.'};
+
   const validated = updateSchema.safeParse(receiptData);
 
   if (!validated.success) {
@@ -93,7 +98,7 @@ export async function updateReceiptAction(receiptData: Receipt) {
     description: validated.data.description || '',
   }
   
-  await updateReceipt(receiptToUpdate);
+  await updateReceipt(userId, receiptToUpdate);
   
   // Revalidate the entire app to ensure all pages get fresh data
   revalidatePath('/', 'layout');
@@ -101,11 +106,12 @@ export async function updateReceiptAction(receiptData: Receipt) {
   return { success: true, message: 'Receipt updated successfully!' };
 }
 
-export async function deleteReceiptAction(id: string) {
+export async function deleteReceiptAction(userId: string, id: string) {
+    if (!userId) return { success: false, message: 'You must be logged in to delete a receipt.'};
     if (!id) {
         return { success: false, message: 'No ID provided for deletion.' };
     }
-    await deleteReceipt(id);
+    await deleteReceipt(userId, id);
     
     // Revalidate the entire app to ensure all pages get fresh data
     revalidatePath('/', 'layout');
@@ -114,9 +120,13 @@ export async function deleteReceiptAction(id: string) {
 }
 
 
-export async function generateSpendingInsightsAction() {
+export async function generateSpendingInsightsAction(userId: string) {
+  if (!userId) return { insight: null, error: 'You must be logged in.'};
   try {
-    const receipts = await getReceipts();
+    const receipts = await getReceipts(userId);
+    if (receipts.length === 0) {
+        return { insight: "You don't have any spending data yet. Upload some receipts to get started!", error: null };
+    }
     const spendingData = JSON.stringify(receipts);
     const result = await generateSpendingInsightsFlow({ spendingData });
     return { insight: result.insights, error: null };
@@ -131,7 +141,9 @@ const budgetSchema = z.object({
     amount: z.coerce.number().min(0, 'Budget amount cannot be negative.')
 });
 
-export async function setBudgetAction({ category, amount }: { category: Category, amount: number }) {
+export async function setBudgetAction(userId: string, { category, amount }: { category: Category, amount: number }) {
+    if (!userId) return { success: false, message: 'You must be logged in.'};
+    
     const validated = budgetSchema.safeParse({ category, amount });
 
     if (!validated.success) {
@@ -139,7 +151,7 @@ export async function setBudgetAction({ category, amount }: { category: Category
         return { success: false, message: `Invalid data: ${errorMessages}` };
     }
 
-    await setBudget(validated.data);
+    await setBudget(userId, validated.data);
     
     // Revalidate the entire app to ensure all pages get fresh data
     revalidatePath('/', 'layout');

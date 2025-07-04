@@ -1,3 +1,4 @@
+
 'use client';
 
 import { useRef, useState, useTransition } from 'react';
@@ -11,6 +12,7 @@ import { type ExtractedReceiptData } from '@/lib/types';
 import Image from 'next/image';
 import { ConfirmationDialog } from './confirmation-dialog';
 import { useRouter } from 'next/navigation';
+import { useAuth } from '@/context/auth-context';
 
 type EditableReceiptData = ExtractedReceiptData & { isBusinessExpense?: boolean };
 
@@ -19,6 +21,7 @@ export function UploadForm() {
   const [isSaving, startSavingTransition] = useTransition();
   const { toast } = useToast();
   const router = useRouter();
+  const { user } = useAuth();
   
   const [file, setFile] = useState<File | null>(null);
   const [previewUrl, setPreviewUrl] = useState<string | null>(null);
@@ -75,10 +78,13 @@ export function UploadForm() {
   };
 
   const handleSave = () => {
-    if (!receiptData) return;
+    if (!receiptData || !user) {
+        toast({ title: 'You must be logged in.', variant: 'destructive'});
+        return;
+    };
     
     startSavingTransition(async () => {
-        const result = await saveReceiptAction({ receiptData, photoDataUri });
+        const result = await saveReceiptAction({ userId: user.uid, receiptData, photoDataUri });
         if (result.success) {
             toast({
                 title: 'Success!',

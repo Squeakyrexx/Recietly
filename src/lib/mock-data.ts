@@ -9,19 +9,17 @@ import {
   orderBy,
   setDoc,
   getDoc,
+  where,
 } from 'firebase/firestore';
 import { db } from './firebase';
 import { type Receipt, type SpendingByCategory, type Category, CATEGORIES } from '@/lib/types';
 
-// For this demo, we'll hardcode a user ID.
-// In a real app, this would come from an authentication system.
-const userId = 'demo-user';
+// NOTE: All functions now require a userId to operate on user-specific data.
+// The hardcoded 'demo-user' has been removed.
 
-const receiptsCollection = collection(db, 'users', userId, 'receipts');
-const budgetsDoc = doc(db, 'users', userId, 'budgets', 'data');
-
-
-export const getReceipts = async (): Promise<Receipt[]> => {
+export const getReceipts = async (userId: string): Promise<Receipt[]> => {
+  if (!userId) return [];
+  const receiptsCollection = collection(db, 'users', userId, 'receipts');
   const q = query(receiptsCollection, orderBy('date', 'desc'));
   const querySnapshot = await getDocs(q);
   const receipts: Receipt[] = [];
@@ -31,7 +29,8 @@ export const getReceipts = async (): Promise<Receipt[]> => {
   return receipts;
 };
 
-export const addReceipt = async (receipt: Omit<Receipt, 'id'>) => {
+export const addReceipt = async (userId: string, receipt: Omit<Receipt, 'id'>) => {
+  if (!userId) throw new Error('User not authenticated');
   const d = new Date(receipt.date.replace(/-/g, '/'));
   const isValidDate = !isNaN(d.getTime());
 
@@ -40,24 +39,28 @@ export const addReceipt = async (receipt: Omit<Receipt, 'id'>) => {
     date: isValidDate ? receipt.date : new Date().toISOString().split('T')[0],
     isBusinessExpense: receipt.isBusinessExpense || false,
   };
+  const receiptsCollection = collection(db, 'users', userId, 'receipts');
   await addDoc(receiptsCollection, newReceipt);
 };
 
-export const updateReceipt = async (updatedReceipt: Receipt) => {
+export const updateReceipt = async (userId: string, updatedReceipt: Receipt) => {
+  if (!userId) throw new Error('User not authenticated');
   const receiptDoc = doc(db, 'users', userId, 'receipts', updatedReceipt.id);
   const { id, ...data } = updatedReceipt;
   await updateDoc(receiptDoc, data);
 };
 
-export const deleteReceipt = async (id: string) => {
+export const deleteReceipt = async (userId: string, id: string) => {
+  if (!userId) throw new Error('User not authenticated');
   const receiptDoc = doc(db, 'users', userId, 'receipts', id);
   await deleteDoc(receiptDoc);
 };
 
-export const getSpendingByCategory = async ({ month }: { month: 'current' | 'all' }): Promise<SpendingByCategory[]> => {
+export const getSpendingByCategory = async (userId: string, { month }: { month: 'current' | 'all' }): Promise<SpendingByCategory[]> => {
+  if (!userId) return [];
   const spendingMap: { [key: string]: number } = {};
   
-  let receiptsToProcess = await getReceipts();
+  let receiptsToProcess = await getReceipts(userId);
   
   if (month === 'current') {
     const now = new Date();
@@ -83,8 +86,9 @@ export const getSpendingByCategory = async ({ month }: { month: 'current' | 'all
   }));
 };
 
-export const getTotalSpending = async ({ month }: { month: 'current' | 'all' }): Promise<number> => {
-    let receiptsToProcess = await getReceipts();
+export const getTotalSpending = async (userId: string, { month }: { month: 'current' | 'all' }): Promise<number> => {
+    if (!userId) return 0;
+    let receiptsToProcess = await getReceipts(userId);
     if (month === 'current') {
         const now = new Date();
         const currentYearMonth = now.toISOString().slice(0, 7); // "YYYY-MM"
@@ -97,8 +101,10 @@ export const getTotalSpending = async ({ month }: { month: 'current' | 'all' }):
   return receiptsToProcess.reduce((total, receipt) => total + receipt.amount, 0);
 };
 
-export const getBudgets = async (): Promise<{ [key in Category]?: number }> => {
-    const docSnap = await getDoc(budgetsDoc);
+export const getBudgets = async (userId: string): Promise<{ [key in Category]?: number }> => {
+    if (!userId) return {};
+    const budgetsDocRef = doc(db, 'users', userId, 'budgets', 'data');
+    const docSnap = await getDoc(budgetsDocRef);
     if (docSnap.exists()) {
         return docSnap.data() as { [key in Category]?: number };
     } else {
@@ -107,7 +113,9 @@ export const getBudgets = async (): Promise<{ [key in Category]?: number }> => {
     }
 }
 
-export const setBudget = async ({ category, amount }: { category: Category, amount: number }) => {
+export const setBudget = async (userId: string, { category, amount }: { category: Category, amount: number }) => {
+    if (!userId) throw new Error('User not authenticated');
+    const budgetsDocRef = doc(db, 'users', userId, 'budgets', 'data');
     // We use setDoc with merge: true to create or update the document
-    await setDoc(budgetsDoc, { [category]: amount }, { merge: true });
+    await setDoc(budgetsDocRef, { [category]: amount }, { merge: true });
 }

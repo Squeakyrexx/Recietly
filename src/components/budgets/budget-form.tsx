@@ -1,3 +1,4 @@
+
 'use client';
 
 import { useState, useTransition } from 'react';
@@ -9,6 +10,7 @@ import { useToast } from '@/hooks/use-toast';
 import { Loader2, Save } from 'lucide-react';
 import { type Category, type SpendingByCategory } from '@/lib/types';
 import { Progress } from '../ui/progress';
+import { useAuth } from '@/context/auth-context';
 
 interface BudgetFormProps {
   initialBudgets: { [key: string]: number };
@@ -19,6 +21,8 @@ export function BudgetForm({ initialBudgets, spendingThisMonth }: BudgetFormProp
   const [budgets, setBudgets] = useState(initialBudgets);
   const [pendingSaves, setPendingSaves] = useState<{ [key: string]: boolean }>({});
   const { toast } = useToast();
+  const { user } = useAuth();
+  const [isPending, startTransition] = useTransition();
 
   const handleBudgetChange = (category: string, value: string) => {
     const amount = parseFloat(value) || 0;
@@ -26,12 +30,16 @@ export function BudgetForm({ initialBudgets, spendingThisMonth }: BudgetFormProp
   };
 
   const handleSave = (category: Category) => {
+    if (!user) {
+        toast({ title: 'Not authenticated', variant: 'destructive'});
+        return;
+    }
     const amount = budgets[category];
 
     setPendingSaves((prev) => ({ ...prev, [category]: true }));
 
     startTransition(async () => {
-      const result = await setBudgetAction({ category, amount });
+      const result = await setBudgetAction(user.uid, { category, amount });
       if (result.success) {
         toast({
           title: 'Budget Saved',
@@ -47,8 +55,6 @@ export function BudgetForm({ initialBudgets, spendingThisMonth }: BudgetFormProp
       setPendingSaves((prev) => ({ ...prev, [category]: false }));
     });
   };
-
-  const [isPending, startTransition] = useTransition();
 
   const spendingMap = spendingThisMonth.reduce((acc, item) => {
     acc[item.category] = item.total;
@@ -86,7 +92,7 @@ export function BudgetForm({ initialBudgets, spendingThisMonth }: BudgetFormProp
                 />
                 <Button 
                     onClick={() => handleSave(category as Category)} 
-                    disabled={pendingSaves[category]}
+                    disabled={pendingSaves[category] || isPending}
                     size="sm"
                 >
                   {pendingSaves[category] ? (

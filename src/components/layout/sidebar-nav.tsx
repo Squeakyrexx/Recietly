@@ -1,7 +1,8 @@
+
 'use client';
 
 import Link from 'next/link';
-import { usePathname } from 'next/navigation';
+import { usePathname, useRouter } from 'next/navigation';
 import {
   SidebarHeader,
   SidebarContent,
@@ -15,6 +16,7 @@ import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Logo } from '@/components/icons';
+import { useAuth } from '@/context/auth-context';
 import {
   LayoutDashboard,
   Receipt,
@@ -22,6 +24,7 @@ import {
   Settings,
   Gem,
   PiggyBank,
+  LogOut,
 } from 'lucide-react';
 
 const navItems = [
@@ -34,6 +37,17 @@ const navItems = [
 
 export function SidebarNav() {
   const pathname = usePathname();
+  const { user, logout } = useAuth();
+  const router = useRouter();
+
+  const handleLogout = async () => {
+    await logout();
+    router.push('/login');
+  };
+  
+  const getAvatarFallback = (email: string) => {
+    return email ? email[0].toUpperCase() : 'U';
+  }
 
   return (
     <>
@@ -78,13 +92,16 @@ export function SidebarNav() {
         </Card>
         <div className="flex items-center gap-2 p-2">
           <Avatar className="h-8 w-8">
-            <AvatarImage src="https://placehold.co/100x100.png" alt="User" />
-            <AvatarFallback>U</AvatarFallback>
+            <AvatarImage src={user?.photoURL || "https://placehold.co/100x100.png"} alt="User" />
+            <AvatarFallback>{user?.email ? getAvatarFallback(user.email) : 'U'}</AvatarFallback>
           </Avatar>
-          <div className="flex flex-col">
-            <span className="text-sm font-medium">Demo User</span>
-            <span className="text-xs text-muted-foreground">user@example.com</span>
+          <div className="flex flex-col truncate">
+            <span className="text-sm font-medium truncate">{user?.displayName || 'User'}</span>
+            <span className="text-xs text-muted-foreground truncate">{user?.email}</span>
           </div>
+          <Button variant="ghost" size="icon" className="ml-auto h-8 w-8" onClick={handleLogout} title="Log Out">
+            <LogOut className="h-4 w-4" />
+          </Button>
         </div>
       </SidebarFooter>
     </>

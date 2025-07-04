@@ -1,13 +1,29 @@
+
+'use client';
+
+import { useState, useEffect } from 'react';
 import { getReceipts } from '@/lib/mock-data';
 import { Button } from '@/components/ui/button';
 import Link from 'next/link';
 import { ReceiptsList } from '@/components/receipts/receipts-list';
+import { useAuth } from '@/context/auth-context';
+import type { Receipt } from '@/lib/types';
+import { Skeleton } from '@/components/ui/skeleton';
 
-export const dynamic = 'force-dynamic';
+export default function ReceiptsPage() {
+  const { user } = useAuth();
+  const [receipts, setReceipts] = useState<Receipt[]>([]);
+  const [loading, setLoading] = useState(true);
 
-export default async function ReceiptsPage() {
-  // In a real app, this data would be fetched for the logged-in user
-  const receipts = await getReceipts();
+  useEffect(() => {
+    if (user) {
+      setLoading(true);
+      getReceipts(user.uid).then(data => {
+        setReceipts(data);
+        setLoading(false);
+      });
+    }
+  }, [user]);
 
   return (
     <div className="space-y-6">
@@ -20,7 +36,15 @@ export default async function ReceiptsPage() {
           <Button>Upload New Receipt</Button>
         </Link>
       </header>
-      <ReceiptsList initialReceipts={receipts} />
+      {loading ? (
+        <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4">
+          {[...Array(8)].map((_, i) => (
+            <Skeleton key={i} className="h-64 rounded-lg" />
+          ))}
+        </div>
+      ) : (
+        <ReceiptsList initialReceipts={receipts} />
+      )}
     </div>
   );
 }

@@ -1,3 +1,4 @@
+
 'use client';
 
 import { useState, useEffect, useTransition } from 'react';
@@ -31,6 +32,7 @@ import { type Receipt, CATEGORIES } from '@/lib/types';
 import { Loader2, Save, Trash2, Briefcase } from 'lucide-react';
 import { updateReceiptAction, deleteReceiptAction } from '@/lib/actions';
 import { useToast } from '@/hooks/use-toast';
+import { useAuth } from '@/context/auth-context';
 import { Switch } from '../ui/switch';
 
 interface ReceiptDetailsDialogProps {
@@ -51,6 +53,7 @@ export function ReceiptDetailsDialog({
   const [isSaving, startSavingTransition] = useTransition();
   const [isDeleting, startDeletingTransition] = useTransition();
   const { toast } = useToast();
+  const { user } = useAuth();
   const [editedReceipt, setEditedReceipt] = useState<Receipt | null>(receipt);
 
   useEffect(() => {
@@ -64,10 +67,10 @@ export function ReceiptDetailsDialog({
   };
   
   const handleSave = () => {
-    if (!editedReceipt) return;
+    if (!editedReceipt || !user) return;
     
     startSavingTransition(async () => {
-      const result = await updateReceiptAction(editedReceipt);
+      const result = await updateReceiptAction(user.uid, editedReceipt);
       if (result.success) {
         toast({
           title: 'Success!',
@@ -86,10 +89,10 @@ export function ReceiptDetailsDialog({
   }
 
   const handleDelete = () => {
-    if (!editedReceipt) return;
+    if (!editedReceipt || !user) return;
     
     startDeletingTransition(async () => {
-      const result = await deleteReceiptAction(editedReceipt.id);
+      const result = await deleteReceiptAction(user.uid, editedReceipt.id);
       if (result.success) {
         toast({
           title: 'Receipt Deleted',
