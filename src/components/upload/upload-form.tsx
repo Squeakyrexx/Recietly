@@ -6,7 +6,7 @@ import { useToast } from '@/hooks/use-toast';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Button } from '@/components/ui/button';
-import { Loader2, UploadCloud, X } from 'lucide-react';
+import { Camera, Image as ImageIcon, Loader2, X } from 'lucide-react';
 import { type ExtractedReceiptData } from '@/lib/types';
 import Image from 'next/image';
 import { ConfirmationDialog } from './confirmation-dialog';
@@ -26,7 +26,8 @@ export function UploadForm() {
   const [isConfirming, setIsConfirming] = useState(false);
   const [receiptData, setReceiptData] = useState<EditableReceiptData | null>(null);
 
-  const fileInputRef = useRef<HTMLInputElement>(null);
+  const takePictureInputRef = useRef<HTMLInputElement>(null);
+  const chooseFileInputRef = useRef<HTMLInputElement>(null);
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const selectedFile = e.target.files?.[0];
@@ -101,8 +102,11 @@ export function UploadForm() {
     setPhotoDataUri(null);
     setReceiptData(null);
     setIsConfirming(false);
-    if (fileInputRef.current) {
-        fileInputRef.current.value = "";
+    if (takePictureInputRef.current) {
+        takePictureInputRef.current.value = "";
+    }
+    if (chooseFileInputRef.current) {
+        chooseFileInputRef.current.value = "";
     }
   }
 
@@ -119,6 +123,14 @@ export function UploadForm() {
     setPhotoDataUri(null);
     setIsConfirming(true);
   };
+
+  const handleRemovePreview = () => {
+    setFile(null);
+    setPreviewUrl(null);
+    setPhotoDataUri(null);
+    if (takePictureInputRef.current) takePictureInputRef.current.value = "";
+    if (chooseFileInputRef.current) chooseFileInputRef.current.value = "";
+  }
   
   return (
     <>
@@ -132,71 +144,65 @@ export function UploadForm() {
         isSaving={isSaving}
       />
       <div className="space-y-6">
-        <div>
-          <Label htmlFor="photo">Receipt Photo</Label>
-          <div className="mt-2 flex justify-center rounded-lg border border-dashed border-border px-6 py-10">
-            {previewUrl ? (
-              <div className="relative h-48 w-48">
+        {previewUrl ? (
+          <div className="space-y-4 text-center">
+            <div className="relative aspect-video w-full rounded-lg overflow-hidden border-2 border-primary/20 bg-muted/50 p-2">
                 <Image src={previewUrl} alt="Receipt preview" fill className="object-contain" />
-                <Button
-                  variant="ghost"
-                  size="icon"
-                  className="absolute -top-2 -right-2 bg-background rounded-full h-7 w-7"
-                  onClick={() => {
-                    setFile(null);
-                    setPreviewUrl(null);
-                    setPhotoDataUri(null);
-                    if (fileInputRef.current) fileInputRef.current.value = "";
-                  }}
-                >
-                  <X className="h-4 w-4" />
+            </div>
+            <div className="grid grid-cols-2 gap-4">
+                <Button onClick={handleProcessReceipt} disabled={isExtracting}>
+                    {isExtracting ? (
+                    <>
+                        <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                        Processing...
+                    </>
+                    ) : (
+                    'Process Receipt'
+                    )}
                 </Button>
-              </div>
-            ) : (
-              <div className="text-center">
-                <UploadCloud className="mx-auto h-12 w-12 text-muted-foreground" />
-                <div className="mt-4 flex text-sm leading-6 text-muted-foreground">
-                  <Label
-                    htmlFor="photo"
-                    className="relative cursor-pointer rounded-md font-semibold text-primary focus-within:outline-none focus-within:ring-2 focus-within:ring-ring focus-within:ring-offset-2 hover:text-primary/80"
-                  >
-                    <span>Upload a file</span>
-                    <Input
-                      id="photo"
-                      name="photo"
-                      type="file"
-                      className="sr-only"
-                      accept="image/*"
-                      capture="environment"
-                      onChange={handleFileChange}
-                      ref={fileInputRef}
-                    />
-                  </Label>
-                  <p className="pl-1">or drag and drop</p>
-                </div>
-                <p className="text-xs leading-5 text-muted-foreground">PNG, JPG, WEBP up to 10MB</p>
-              </div>
-            )}
+                <Button variant="outline" onClick={handleRemovePreview}>
+                    <X className="mr-2 h-4 w-4" /> Change Photo
+                </Button>
+            </div>
+            <p className="text-sm text-muted-foreground">
+                Or, <Button variant="link" type="button" className="p-0 h-auto" onClick={handleManualEntry}>enter details manually</Button>
+            </p>
           </div>
-        </div>
-
-        <div className="text-center">
-          <p className="text-sm text-muted-foreground">
-              Want to skip the upload? <Button variant="link" type="button" className="p-0 h-auto" onClick={handleManualEntry}>Enter details manually</Button>
-          </p>
-        </div>
-        
-        {file && (
-          <Button onClick={handleProcessReceipt} disabled={isExtracting} className="w-full">
-            {isExtracting ? (
-              <>
-                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                Extracting Data...
-              </>
-            ) : (
-              'Process Receipt'
-            )}
-          </Button>
+        ) : (
+            <div className="space-y-4">
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                    <Label htmlFor="take-picture" className="flex flex-col items-center justify-center gap-2 p-8 rounded-lg border-2 border-dashed border-border hover:border-primary hover:bg-primary/5 cursor-pointer transition-colors text-center">
+                        <Camera className="h-10 w-10 text-primary"/>
+                        <span className="font-semibold text-foreground">Take a Picture</span>
+                        <Input
+                            id="take-picture"
+                            type="file"
+                            className="sr-only"
+                            accept="image/*"
+                            capture="environment"
+                            onChange={handleFileChange}
+                            ref={takePictureInputRef}
+                        />
+                    </Label>
+                    <Label htmlFor="choose-file" className="flex flex-col items-center justify-center gap-2 p-8 rounded-lg border-2 border-dashed border-border hover:border-primary hover:bg-primary/5 cursor-pointer transition-colors text-center">
+                        <ImageIcon className="h-10 w-10 text-primary"/>
+                        <span className="font-semibold text-foreground">Choose from Library</span>
+                        <Input
+                            id="choose-file"
+                            type="file"
+                            className="sr-only"
+                            accept="image/*"
+                            onChange={handleFileChange}
+                            ref={chooseFileInputRef}
+                        />
+                    </Label>
+                </div>
+                <div className="text-center">
+                  <p className="text-sm text-muted-foreground">
+                      No camera? <Button variant="link" type="button" className="p-0 h-auto" onClick={handleManualEntry}>Enter details manually</Button>
+                  </p>
+                </div>
+            </div>
         )}
       </div>
     </>
