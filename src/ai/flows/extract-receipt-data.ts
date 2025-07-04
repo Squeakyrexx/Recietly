@@ -10,7 +10,7 @@
 
 import {ai} from '@/ai/genkit';
 import {z} from 'genkit';
-import { CATEGORIES } from '@/lib/types';
+import { CATEGORIES, Category } from '@/lib/types';
 
 const ExtractReceiptDataInputSchema = z.object({
   photoDataUri: z
@@ -39,28 +39,27 @@ export async function extractReceiptData(input: ExtractReceiptDataInput): Promis
   return extractReceiptDataFlow(input);
 }
 
-const prompt = ai.definePrompt({
-  name: 'extractReceiptDataPrompt',
-  input: {schema: ExtractReceiptDataInputSchema},
+const AIExtractionPromptInputSchema = z.object({
+    photoDataUri: z.string(),
+});
+
+const AIExtractionPrompt = ai.definePrompt({
+  name: 'AIExtractionPrompt',
+  input: {schema: AIExtractionPromptInputSchema},
   output: {schema: ExtractReceiptDataOutputSchema},
   prompt: `You are an expert accounting assistant specializing in extracting data from receipts.
 
-  You will use this information to extract the merchant, amount, date, category, and description from the receipt.
-  The category must be one of the following: ${CATEGORIES.join(', ')}.
-  The date should be in YYYY-MM-DD format.
-  The description MUST be a brief, one-sentence summary of the purchase and MUST NOT be the same as the category name. For instance, if the category is 'Groceries', a good description is 'Weekly grocery shopping at Trader Joe's' or 'Purchase of fresh produce and snacks'. A bad description would simply be 'Groceries'. Be creative and descriptive.
+  Your task is to analyze the provided receipt image and extract the following information:
+  - The merchant's name.
+  - The total transaction amount.
+  - The date of the transaction in YYYY-MM-DD format.
+  - The most appropriate category for the expense from the following list: ${CATEGORIES.join(', ')}.
+  - A brief, one-sentence summary of the purchase. The description MUST NOT be the same as the category name. For example, if the category is 'Groceries', a good description is 'Weekly grocery shopping at a supermarket'.
 
-  If the user has provided values for any of these fields, you must use those values instead of the values you extract from the receipt.
+  Please return only the structured data as requested.
 
-  Here is the receipt:
-  Photo: {{media url=photoDataUri}}
-
-  Here is the information provided by the user:
-  Merchant: {{userMerchant}}
-  Amount: {{userAmount}}
-  Date: {{userDate}}
-  Category: {{userCategory}}
-  Description: {{userDescription}}`,
+  Here is the receipt image to analyze:
+  Photo: {{media url=photoDataUri}}`,
 });
 
 const extractReceiptDataFlow = ai.defineFlow(
@@ -69,8 +68,24 @@ const extractReceiptDataFlow = ai.defineFlow(
     inputSchema: ExtractReceiptDataInputSchema,
     outputSchema: ExtractReceiptDataOutputSchema,
   },
-  async input => {
-    const {output} = await prompt(input);
-    return output!;
+  async (input) => {
+    // 1. Let the AI extract data from the image.
+    const { output: aiOutput } = await AIExtractionPrompt({ photoDataUri: input.photoDataUri });
+
+    if (!aiOutput) {
+      throw new Error('AI failed to extract data from the receipt image.');
+    }
+
+    // 2. Merge AI output with user-provided overrides.
+    // User data takes precedence.
+    const finalData: ExtractReceiptDataOutput = {
+      merchant: input.userMerchant || aiOutput.merchant,
+      amount: input.userAmount || aiOutput.amount,
+      date: input.userDate || aiOutput.date,
+      category: (input.userCategory as Category) || aiOutput.category,
+      description: input.userDescription || aiOutput.description,
+    };
+    
+    return finalData;
   }
 );
