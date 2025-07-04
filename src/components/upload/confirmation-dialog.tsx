@@ -86,7 +86,7 @@ export function ConfirmationDialog({
               <Input
                 id="confirm-date"
                 type="date"
-                value={receiptData.date.split('T')[0]}
+                value={receiptData.date}
                 onChange={(e) => handleFieldChange('date', e.target.value)}
               />
             </div>

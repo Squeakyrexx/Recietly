@@ -28,7 +28,7 @@ export type ExtractReceiptDataInput = z.infer<typeof ExtractReceiptDataInputSche
 const ExtractReceiptDataOutputSchema = z.object({
   merchant: z.string().describe('The name of the merchant.'),
   amount: z.number().describe('The total amount of the receipt.'),
-  date: z.string().describe('The date of the transaction (ISO 8601 format).'),
+  date: z.string().describe('The date of the transaction in YYYY-MM-DD format.'),
   category: z.string().describe('The category of the expense.'),
   description: z.string().describe('A short description of the purchase.'),
 });
@@ -46,7 +46,8 @@ const prompt = ai.definePrompt({
 
   You will use this information to extract the merchant, amount, date, category, and description from the receipt.
   The category must be one of the following: Groceries, Transport, Entertainment, Utilities, Dining, Other.
-  The description should be a brief, one-sentence summary of the purchase and should NOT be the same as the category name. For example, if the category is 'Groceries', a good description would be 'Weekly grocery shopping'.
+  The date should be in YYYY-MM-DD format.
+  The description MUST be a brief, one-sentence summary of the purchase and should NOT be the same as the category name. For example, if the category is 'Groceries', a good description would be 'Weekly grocery shopping' or 'Purchase of fresh produce'. A bad description would be 'Groceries'.
 
   If the user has provided values for any of these fields, you must use those values instead of the values you extract from the receipt.
 

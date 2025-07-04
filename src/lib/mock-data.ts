@@ -84,11 +84,15 @@ export const getReceipts = (): Receipt[] => {
 };
 
 export const addReceipt = (receipt: Omit<Receipt, 'id' | 'imageUrl'>) => {
+    const d = new Date(receipt.date);
+    // The `.toISOString()` method will throw a RangeError for an invalid date.
+    // We check if the date is valid. If not, we default to the current date to avoid a crash.
+    const isValidDate = !isNaN(d.getTime());
+    
     const newReceipt: Receipt = {
         id: (receipts.length + 1).toString(),
         ...receipt,
-        // The date from the form is a string like 'YYYY-MM-DD', convert to ISO string
-        date: new Date(receipt.date).toISOString(),
+        date: isValidDate ? d.toISOString() : new Date().toISOString(),
         // Assign a random placeholder image
         imageUrl: `https://placehold.co/${Math.floor(Math.random() * 200) + 400}x${Math.floor(Math.random() * 400) + 400}.png`,
     };
