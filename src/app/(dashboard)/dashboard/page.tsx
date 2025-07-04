@@ -3,10 +3,10 @@ import { CategorySpendingChart } from '@/components/dashboard/category-spending-
 import { AiInsights } from '@/components/dashboard/ai-insights';
 import { getSpendingByCategory, getTotalSpending, getBudgets } from '@/lib/mock-data';
 import { BudgetSummary } from '@/components/dashboard/budget-summary';
-import { noStore } from 'next/cache';
+
+export const dynamic = 'force-dynamic';
 
 export default function DashboardPage() {
-  noStore();
   // In a real app, this data would be fetched for the logged-in user
   const totalSpending = getTotalSpending({ month: 'current' });
   const spendingByCategory = getSpendingByCategory({ month: 'current' });

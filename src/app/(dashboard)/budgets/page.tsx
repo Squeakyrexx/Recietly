@@ -2,10 +2,10 @@ import { getBudgets, getSpendingByCategory } from "@/lib/mock-data";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { BudgetForm } from "@/components/budgets/budget-form";
 import { CATEGORIES } from "@/lib/types";
-import { noStore } from 'next/cache';
+
+export const dynamic = 'force-dynamic';
 
 export default function BudgetsPage() {
-  noStore();
   const initialBudgets = getBudgets();
   const spendingThisMonth = getSpendingByCategory({ month: 'current' });
 
