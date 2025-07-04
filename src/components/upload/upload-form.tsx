@@ -1,19 +1,18 @@
 'use client';
 
 import { useFormStatus } from 'react-dom';
-import { useActionState, useEffect, useRef, useState } from 'react';
-import { extractReceiptDataAction } from '@/lib/actions';
+import { useActionState, useEffect, useRef, useState, useTransition } from 'react';
+import { extractReceiptDataAction, saveReceiptAction } from '@/lib/actions';
 import { useToast } from '@/hooks/use-toast';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Button } from '@/components/ui/button';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Textarea } from '@/components/ui/textarea';
-import { Loader2, UploadCloud, X, CheckCircle2, ChevronDown } from 'lucide-react';
-import { Card, CardContent } from '@/components/ui/card';
+import { Loader2, UploadCloud, X, Save, Edit, ArrowLeft, Image as ImageIcon } from 'lucide-react';
+import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { type ExtractedReceiptData } from '@/lib/types';
 import Image from 'next/image';
-import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
 
 const initialState = {
   message: '',
@@ -21,14 +20,14 @@ const initialState = {
   errors: null,
 };
 
-function SubmitButton() {
+function UploadButton() {
   const { pending } = useFormStatus();
   return (
     <Button type="submit" disabled={pending} className="w-full">
       {pending ? (
         <>
           <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-          Processing...
+          Extracting Data...
         </>
       ) : (
         'Process Receipt'
@@ -38,31 +37,33 @@ function SubmitButton() {
 }
 
 export function UploadForm() {
-  const [state, formAction] = useActionState(extractReceiptDataAction, initialState);
+  const [extractionState, formAction] = useActionState(extractReceiptDataAction, initialState);
   const { toast } = useToast();
   const formRef = useRef<HTMLFormElement>(null);
+  
   const [file, setFile] = useState<File | null>(null);
   const [previewUrl, setPreviewUrl] = useState<string | null>(null);
-  const [showManualEntry, setShowManualEntry] = useState(false);
+
+  const [view, setView] = useState<'upload' | 'confirm'>('upload');
+  const [receiptData, setReceiptData] = useState<ExtractedReceiptData | null>(null);
+  const [isSaving, startSavingTransition] = useTransition();
 
   useEffect(() => {
-    if (state.message && state.data) {
+    if (extractionState.data) {
+      setReceiptData(extractionState.data);
+      setView('confirm');
       toast({
-        title: 'Success!',
-        description: state.message,
+        title: 'Data Extracted',
+        description: 'Please review the information below and save.',
       });
-      formRef.current?.reset();
-      setFile(null);
-      setPreviewUrl(null);
-      setShowManualEntry(false);
-    } else if (state.message && !state.data) {
+    } else if (extractionState.message && !extractionState.errors) {
        toast({
         title: 'Error',
-        description: state.message,
+        description: extractionState.message,
         variant: 'destructive',
       });
     }
-  }, [state, toast]);
+  }, [extractionState, toast]);
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const selectedFile = e.target.files?.[0];
@@ -79,6 +80,107 @@ export function UploadForm() {
         const fileInput = formRef.current.querySelector('input[type="file"]') as HTMLInputElement;
         if(fileInput) fileInput.value = "";
     }
+  }
+
+  const handleSave = () => {
+    if (!receiptData) return;
+    
+    startSavingTransition(async () => {
+        const result = await saveReceiptAction(receiptData);
+        if (result.success) {
+            toast({
+                title: 'Success!',
+                description: result.message,
+            });
+            // Reset the entire form state
+            setView('upload');
+            setFile(null);
+            setPreviewUrl(null);
+            setReceiptData(null);
+            formRef.current?.reset();
+        } else {
+            toast({
+                title: 'Error Saving',
+                description: result.message,
+                variant: 'destructive',
+            });
+        }
+    });
+  }
+
+  const handleDiscard = () => {
+      setView('upload');
+      setReceiptData(null);
+      // Keep file and preview so user can retry extraction
+  }
+
+  if (view === 'confirm' && receiptData) {
+    return (
+        <div className="space-y-6">
+            <div className="relative h-64 w-full rounded-lg overflow-hidden border">
+                {previewUrl ? (
+                    <Image src={previewUrl} alt="Receipt preview" layout="fill" objectFit="contain" />
+                ) : (
+                    <div className="flex h-full w-full items-center justify-center bg-muted">
+                        <ImageIcon className="h-16 w-16 text-muted-foreground" />
+                    </div>
+                )}
+            </div>
+            
+            <Card>
+                <CardHeader>
+                    <CardTitle>Review Extracted Data</CardTitle>
+                    <CardDescription>
+                        Please check the information extracted by the AI. You can make corrections before saving.
+                    </CardDescription>
+                </CardHeader>
+                <CardContent className="space-y-4">
+                     <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+                        <div className="space-y-1.5">
+                            <Label htmlFor="confirm-merchant">Merchant</Label>
+                            <Input id="confirm-merchant" value={receiptData.merchant} onChange={e => setReceiptData({...receiptData, merchant: e.target.value})} />
+                        </div>
+                         <div className="space-y-1.5">
+                            <Label htmlFor="confirm-amount">Amount</Label>
+                            <Input id="confirm-amount" type="number" step="0.01" value={receiptData.amount} onChange={e => setReceiptData({...receiptData, amount: parseFloat(e.target.value)})} />
+                        </div>
+                         <div className="space-y-1.5">
+                            <Label htmlFor="confirm-date">Date</Label>
+                            <Input id="confirm-date" type="date" value={receiptData.date.split('T')[0]} onChange={e => setReceiptData({...receiptData, date: e.target.value})} />
+                        </div>
+                         <div className="space-y-1.5">
+                            <Label htmlFor="confirm-category">Category</Label>
+                            <Select value={receiptData.category} onValueChange={value => setReceiptData({...receiptData, category: value})}>
+                                <SelectTrigger id="confirm-category">
+                                    <SelectValue placeholder="Select a category" />
+                                </SelectTrigger>
+                                <SelectContent>
+                                    <SelectItem value="Groceries">Groceries</SelectItem>
+                                    <SelectItem value="Transport">Transport</SelectItem>
+                                    <SelectItem value="Dining">Dining</SelectItem>
+                                    <SelectItem value="Entertainment">Entertainment</SelectItem>
+                                    <SelectItem value="Utilities">Utilities</SelectItem>
+                                    <SelectItem value="Other">Other</SelectItem>
+                                </SelectContent>
+                            </Select>
+                        </div>
+                        <div className="sm:col-span-2 space-y-1.5">
+                            <Label htmlFor="confirm-description">Description</Label>
+                            <Textarea id="confirm-description" value={receiptData.description} onChange={e => setReceiptData({...receiptData, description: e.target.value})} />
+                        </div>
+                    </div>
+                    <div className="flex flex-col sm:flex-row-reverse gap-3 pt-4">
+                        <Button onClick={handleSave} disabled={isSaving} className="w-full sm:w-auto">
+                            {isSaving ? <><Loader2 className="mr-2 h-4 w-4 animate-spin" /> Saving...</> : <><Save className="mr-2" /> Save Receipt</>}
+                        </Button>
+                        <Button variant="outline" onClick={handleDiscard} className="w-full sm:w-auto">
+                           <ArrowLeft className="mr-2"/> Re-upload or Edit
+                        </Button>
+                    </div>
+                </CardContent>
+            </Card>
+        </div>
+    )
   }
 
   return (
@@ -102,83 +204,24 @@ export function UploadForm() {
                   className="relative cursor-pointer rounded-md font-semibold text-primary focus-within:outline-none focus-within:ring-2 focus-within:ring-ring focus-within:ring-offset-2 hover:text-primary/80"
                 >
                   <span>Upload a file</span>
-                  <Input id="photo" name="photo" type="file" className="sr-only" accept="image/*" capture="environment" onChange={handleFileChange} />
+                  <Input id="photo" name="photo" type="file" className="sr-only" accept="image/*" capture="environment" onChange={handleFileChange} required/>
                 </Label>
                 <p className="pl-1">or drag and drop</p>
               </div>
-              <p className="text-xs leading-5 text-muted-foreground">PNG, JPG, GIF up to 10MB</p>
+              <p className="text-xs leading-5 text-muted-foreground">PNG, JPG, WEBP, GIF up to 10MB</p>
             </div>
           )}
         </div>
-        {state.errors?.photo && <p className="text-sm text-destructive mt-1">{state.errors.photo[0]}</p>}
+        {extractionState.errors?.photo && <p className="text-sm text-destructive mt-1">{extractionState.errors.photo[0]}</p>}
       </div>
 
-      <Collapsible open={showManualEntry} onOpenChange={setShowManualEntry}>
-        <div className="flex justify-center">
-          <CollapsibleTrigger asChild>
-            <Button variant="ghost" className="text-sm font-medium">
-              Enter details manually
-              <ChevronDown className="ml-1 h-4 w-4 transition-transform duration-200 data-[state=open]:rotate-180" />
-            </Button>
-          </CollapsibleTrigger>
-        </div>
-        <CollapsibleContent className="space-y-6 pt-4 overflow-hidden data-[state=closed]:animate-accordion-up data-[state=open]:animate-accordion-down">
-          <div className="grid grid-cols-1 gap-6 sm:grid-cols-2">
-            <div className="space-y-2">
-              <Label htmlFor="merchant">Merchant</Label>
-              <Input id="merchant" name="merchant" placeholder="e.g., FreshMart" />
-            </div>
-            <div className="space-y-2">
-              <Label htmlFor="amount">Amount</Label>
-              <Input id="amount" name="amount" type="number" step="0.01" placeholder="e.g., 75.42" />
-            </div>
-            <div className="space-y-2">
-              <Label htmlFor="date">Date</Label>
-              <Input id="date" name="date" type="date" />
-            </div>
-            <div className="space-y-2">
-              <Label htmlFor="category">Category</Label>
-              <Select name="category">
-                <SelectTrigger>
-                  <SelectValue placeholder="Select a category" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="Groceries">Groceries</SelectItem>
-                  <SelectItem value="Transport">Transport</SelectItem>
-                  <SelectItem value="Dining">Dining</SelectItem>
-                  <SelectItem value="Entertainment">Entertainment</SelectItem>
-                  <SelectItem value="Utilities">Utilities</SelectItem>
-                  <SelectItem value="Other">Other</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
-            <div className="sm:col-span-2 space-y-2">
-              <Label htmlFor="description">Description</Label>
-              <Textarea id="description" name="description" placeholder="e.g., Weekly groceries" />
-            </div>
-          </div>
-        </CollapsibleContent>
-      </Collapsible>
-
-      <SubmitButton />
-
-      {state.data && (
-        <Card className="mt-6 bg-secondary">
-            <CardContent className="p-4">
-                <div className="flex items-center gap-2 mb-2">
-                    <CheckCircle2 className="h-5 w-5 text-green-500" />
-                    <h3 className="font-semibold">Successfully Extracted Data</h3>
-                </div>
-                <div className="text-sm space-y-1 bg-background p-3 rounded-md">
-                    <p><strong>Merchant:</strong> {(state.data as ExtractedReceiptData).merchant}</p>
-                    <p><strong>Amount:</strong> ${(state.data as ExtractedReceiptData).amount.toFixed(2)}</p>
-                    <p><strong>Date:</strong> {new Date((state.data as ExtractedReceiptData).date).toLocaleDateString()}</p>
-                    <p><strong>Category:</strong> {(state.data as ExtractedReceiptData).category}</p>
-                    <p><strong>Description:</strong> {(state.data as ExtractedReceiptData).description}</p>
-                </div>
-            </CardContent>
-        </Card>
-      )}
+       <div className="text-center">
+        <p className="text-sm text-muted-foreground">
+            Want to skip the upload? <Button variant="link" type="button" className="p-0 h-auto" onClick={() => setView('confirm')}>Enter details manually</Button>
+        </p>
+       </div>
+       
+      {file && <UploadButton />}
     </form>
   );
 }
