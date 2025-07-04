@@ -50,32 +50,30 @@ export const deleteReceipt = (id: string) => {
     globalForStore.receipts = globalForStore.receipts!.filter(r => r.id !== id);
 }
 
-const getCurrentMonthAndYear = () => {
-    const now = new Date();
-    return {
-        year: now.getFullYear(),
-        month: now.getMonth(), // 0-indexed (0 for January)
-    };
-}
-
 export const getSpendingByCategory = ({ month }: { month: 'current' | 'all' }): SpendingByCategory[] => {
   const spendingMap: { [key: string]: number } = {};
   
   let receiptsToProcess = getReceipts();
   
   if (month === 'current') {
-    const { year: currentYear, month: currentMonth } = getCurrentMonthAndYear();
+    const now = new Date();
+    const currentYear = now.getFullYear();
+    const currentMonth = now.getMonth();
     
     receiptsToProcess = receiptsToProcess.filter(r => {
-        try {
-            const [year, month] = r.date.split('-').map(Number);
-            // month in date string is 1-indexed, so we subtract 1 for comparison
-            return year === currentYear && (month - 1) === currentMonth;
-        } catch (e) {
-            // In case date format is wrong for some reason
+        // Use the replace trick to parse date string in local timezone
+        const receiptDate = new Date(r.date.replace(/-/g, '/'));
+        
+        // Check if the date is valid before trying to get parts of it
+        if (isNaN(receiptDate.getTime())) {
             console.error(`Invalid date format for receipt ${r.id}: ${r.date}`);
             return false;
         }
+        
+        const receiptYear = receiptDate.getFullYear();
+        const receiptMonth = receiptDate.getMonth();
+        
+        return receiptYear === currentYear && receiptMonth === currentMonth;
     });
   }
   
@@ -96,17 +94,17 @@ export const getSpendingByCategory = ({ month }: { month: 'current' | 'all' }): 
 export const getTotalSpending = ({ month }: { month: 'current' | 'all' }): number => {
     let receiptsToProcess = getReceipts();
     if (month === 'current') {
-        const { year: currentYear, month: currentMonth } = getCurrentMonthAndYear();
+        const now = new Date();
+        const currentYear = now.getFullYear();
+        const currentMonth = now.getMonth();
 
         receiptsToProcess = receiptsToProcess.filter(r => {
-            try {
-                const [year, month] = r.date.split('-').map(Number);
-                 // month in date string is 1-indexed, so we subtract 1 for comparison
-                return year === currentYear && (month - 1) === currentMonth;
-            } catch(e) {
+            const receiptDate = new Date(r.date.replace(/-/g, '/'));
+            if (isNaN(receiptDate.getTime())) {
                 console.error(`Invalid date format for receipt: ${r.date}`);
                 return false;
             }
+            return receiptDate.getFullYear() === currentYear && receiptDate.getMonth() === currentMonth;
         });
     }
   return receiptsToProcess.reduce((total, receipt) => total + receipt.amount, 0);
