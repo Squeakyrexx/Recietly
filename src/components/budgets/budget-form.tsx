@@ -55,6 +55,11 @@ export function BudgetForm({ initialBudgets, spendingThisMonth }: BudgetFormProp
     return acc;
   }, {} as { [key: string]: number });
 
+  const getProgressIndicatorClass = (progress: number) => {
+    if (progress >= 100) return 'bg-destructive';
+    if (progress >= 75) return 'bg-warning';
+    return 'bg-primary';
+  };
 
   return (
     <div className="space-y-6">
@@ -63,6 +68,7 @@ export function BudgetForm({ initialBudgets, spendingThisMonth }: BudgetFormProp
         const budgetAmount = amount || 0;
         const progress = budgetAmount > 0 ? (spent / budgetAmount) * 100 : 0;
         const remaining = budgetAmount - spent;
+        const indicatorClass = getProgressIndicatorClass(progress);
 
         return (
           <div key={category} className="space-y-3">
@@ -94,7 +100,7 @@ export function BudgetForm({ initialBudgets, spendingThisMonth }: BudgetFormProp
             </div>
             {budgetAmount > 0 && (
                 <div className='pl-2 pr-1'>
-                    <Progress value={progress} className="h-2" />
+                    <Progress value={progress} className="h-2" indicatorClassName={indicatorClass} />
                     <div className="flex justify-between text-xs text-muted-foreground mt-1">
                         <span>${spent.toFixed(2)} spent</span>
                         <span>${remaining.toFixed(2)} remaining</span>

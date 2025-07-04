@@ -39,6 +39,12 @@ export function BudgetSummary({ budgets, spending }: BudgetSummaryProps) {
         )
     }
 
+    const getProgressIndicatorClass = (progress: number) => {
+        if (progress >= 100) return 'bg-destructive';
+        if (progress >= 75) return 'bg-warning';
+        return 'bg-primary';
+    };
+
     return (
         <Card>
             <CardHeader>
@@ -52,7 +58,7 @@ export function BudgetSummary({ budgets, spending }: BudgetSummaryProps) {
                     {budgetedItems.map(({ category, budget }) => {
                        const spent = spendingMap[category] || 0;
                        const progress = budget > 0 ? (spent / budget) * 100 : 0;
-                       const remaining = budget - spent;
+                       const indicatorClass = getProgressIndicatorClass(progress);
                        
                        return (
                         <li key={category} className="space-y-1">
@@ -62,7 +68,7 @@ export function BudgetSummary({ budgets, spending }: BudgetSummaryProps) {
                                     ${spent.toFixed(2)} / ${budget.toFixed(2)}
                                 </span>
                            </div>
-                           <Progress value={progress} className="h-2"/>
+                           <Progress value={progress} className="h-2" indicatorClassName={indicatorClass} />
                         </li>
                        )
                     })}

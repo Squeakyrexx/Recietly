@@ -71,7 +71,9 @@ export function SidebarNav() {
                 </CardDescription>
             </CardHeader>
             <CardContent className="p-4 pt-0">
-                <Button className="w-full" size="sm">Upgrade</Button>
+                <Link href="/settings">
+                    <Button className="w-full" size="sm">Upgrade</Button>
+                </Link>
             </CardContent>
         </Card>
         <div className="flex items-center gap-2 p-2">
