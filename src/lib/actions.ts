@@ -70,6 +70,7 @@ export async function saveReceiptAction({ receiptData, photoDataUri }: { receipt
   revalidatePath('/receipts');
   revalidatePath('/dashboard');
   revalidatePath('/budgets');
+  revalidatePath('/', 'layout'); // Force revalidation of the entire app layout
 
   return { success: true, message: 'Receipt saved successfully!' };
 }
@@ -99,6 +100,7 @@ export async function updateReceiptAction(receiptData: Receipt) {
   revalidatePath('/receipts');
   revalidatePath('/dashboard');
   revalidatePath('/budgets');
+  revalidatePath('/', 'layout'); // Force revalidation of the entire app layout
 
   return { success: true, message: 'Receipt updated successfully!' };
 }
@@ -113,6 +115,7 @@ export async function deleteReceiptAction(id: string) {
     revalidatePath('/receipts');
     revalidatePath('/dashboard');
     revalidatePath('/budgets');
+    revalidatePath('/', 'layout'); // Force revalidation of the entire app layout
 
     return { success: true, message: 'Receipt deleted.' };
 }
@@ -147,6 +150,7 @@ export async function setBudgetAction({ category, amount }: { category: Category
     // Revalidate paths that depend on budget data
     revalidatePath('/budgets');
     revalidatePath('/dashboard');
+    revalidatePath('/', 'layout'); // Force revalidation of the entire app layout
     
     return { success: true, message: 'Budget updated!' };
 }
