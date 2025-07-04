@@ -9,7 +9,7 @@ import { Label } from '@/components/ui/label';
 import { Button } from '@/components/ui/button';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Textarea } from '@/components/ui/textarea';
-import { Loader2, UploadCloud, X, Save, Edit, ArrowLeft, Image as ImageIcon } from 'lucide-react';
+import { Loader2, UploadCloud, X, Save, ArrowLeft, Image as ImageIcon } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { type ExtractedReceiptData } from '@/lib/types';
 import Image from 'next/image';
@@ -56,10 +56,10 @@ export function UploadForm() {
         title: 'Data Extracted',
         description: 'Please review the information below and save.',
       });
-    } else if (extractionState.message && !extractionState.errors) {
+    } else if (extractionState.message && (extractionState.errors?._form || extractionState.errors?.photo)) {
        toast({
         title: 'Error',
-        description: extractionState.message,
+        description: extractionState.errors?._form?.[0] || extractionState.errors?.photo?.[0] || extractionState.message,
         variant: 'destructive',
       });
     }
@@ -107,6 +107,17 @@ export function UploadForm() {
         }
     });
   }
+  
+  const handleManualEntry = () => {
+    setReceiptData({
+        merchant: '',
+        amount: 0,
+        date: new Date().toISOString().split('T')[0],
+        category: 'Other',
+        description: '',
+    });
+    setView('confirm');
+  };
 
   const handleDiscard = () => {
       setView('upload');
@@ -217,7 +228,7 @@ export function UploadForm() {
 
        <div className="text-center">
         <p className="text-sm text-muted-foreground">
-            Want to skip the upload? <Button variant="link" type="button" className="p-0 h-auto" onClick={() => setView('confirm')}>Enter details manually</Button>
+            Want to skip the upload? <Button variant="link" type="button" className="p-0 h-auto" onClick={handleManualEntry}>Enter details manually</Button>
         </p>
        </div>
        

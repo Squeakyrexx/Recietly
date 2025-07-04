@@ -15,11 +15,11 @@ const receiptSchema = z.object({
       (file) => ['image/jpeg', 'image/png', 'image/gif', 'image/webp'].includes(file.type),
       'Only .jpg, .png, .gif, and .webp formats are supported.'
     ),
-  merchant: z.string().optional(),
-  amount: z.coerce.number().optional(),
-  date: z.string().optional(),
-  category: z.string().optional(),
-  description: z.string().optional(),
+  merchant: z.string().optional().nullable(),
+  amount: z.coerce.number().optional().nullable(),
+  date: z.string().optional().nullable(),
+  category: z.string().optional().nullable(),
+  description: z.string().optional().nullable(),
 });
 
 export async function extractReceiptDataAction(prevState: any, formData: FormData) {
@@ -50,11 +50,11 @@ export async function extractReceiptDataAction(prevState: any, formData: FormDat
 
     const extractedData = await extractReceiptDataFlow({
       photoDataUri,
-      userMerchant: userFields.merchant,
-      userAmount: userFields.amount,
-      userDate: userFields.date,
-      userCategory: userFields.category,
-      userDescription: userFields.description,
+      userMerchant: userFields.merchant ?? undefined,
+      userAmount: userFields.amount ?? undefined,
+      userDate: userFields.date ?? undefined,
+      userCategory: userFields.category ?? undefined,
+      userDescription: userFields.description ?? undefined,
     });
     
     return { message: 'Data extracted. Please review.', data: extractedData, errors: null };
