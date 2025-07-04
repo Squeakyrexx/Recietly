@@ -45,6 +45,9 @@ const prompt = ai.definePrompt({
   prompt: `You are an expert accounting assistant specializing in extracting data from receipts.
 
   You will use this information to extract the merchant, amount, date, category, and description from the receipt.
+  The category must be one of the following: Groceries, Transport, Entertainment, Utilities, Dining, Other.
+  The description should be a brief, one-sentence summary of the purchase and should NOT be the same as the category name. For example, if the category is 'Groceries', a good description would be 'Weekly grocery shopping'.
+
   If the user has provided values for any of these fields, you must use those values instead of the values you extract from the receipt.
 
   Here is the receipt:

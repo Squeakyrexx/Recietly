@@ -2,18 +2,18 @@
 
 import { extractReceiptData as extractReceiptDataFlow } from '@/ai/flows/extract-receipt-data';
 import { generateSpendingInsights as generateSpendingInsightsFlow } from '@/ai/flows/generate-spending-insights';
-import { mockReceipts } from '@/lib/mock-data';
+import { addReceipt, getReceipts } from '@/lib/mock-data';
 import { revalidatePath } from 'next/cache';
 import { z } from 'zod';
+import { type ExtractedReceiptData } from './types';
 
 export async function extractReceiptDataAction(formData: FormData) {
   const photo = formData.get('photo') as File | null;
 
-  // More robust validation
   if (!photo || photo.size === 0) {
     return {
       message: 'Validation failed.',
-      errors: { photo: ['A receipt image is required. Please select a file.'] },
+      errors: { _form: ['A receipt image is required. Please select a file.'] },
       data: null,
     };
   }
@@ -22,7 +22,7 @@ export async function extractReceiptDataAction(formData: FormData) {
   if (!allowedTypes.includes(photo.type)) {
     return {
       message: 'Invalid file type.',
-      errors: { photo: ['Invalid file type. Please upload a JPG, PNG, GIF, or WEBP image.'] },
+      errors: { _form: ['Invalid file type. Please upload a JPG, PNG, GIF, or WEBP image.'] },
       data: null,
     };
   }
@@ -31,7 +31,7 @@ export async function extractReceiptDataAction(formData: FormData) {
   if (photo.size > MAX_FILE_SIZE_MB * 1024 * 1024) {
     return {
       message: 'File size limit exceeded.',
-      errors: { photo: [`The image must be less than ${MAX_FILE_SIZE_MB}MB.`] },
+      errors: { _form: [`The image must be less than ${MAX_FILE_SIZE_MB}MB.`] },
       data: null,
     };
   }
@@ -63,26 +63,29 @@ const saveSchema = z.object({
   description: z.string().optional(),
 });
 
-export async function saveReceiptAction(data: z.infer<typeof saveSchema>) {
-  const validated = saveSchema.safeParse(data);
+export async function saveReceiptAction({ receiptData }: { receiptData: ExtractedReceiptData }) {
+  const validated = saveSchema.safeParse(receiptData);
 
   if (!validated.success) {
-    return { success: false, message: 'Invalid data provided for saving.' };
+    const errorMessages = validated.error.errors.map(e => e.message).join(', ');
+    return { success: false, message: `Invalid data: ${errorMessages}` };
   }
-
+  
   // In a real app, you would save this to a database.
-  // For now, we just log it and revalidate to simulate the data being added.
-  console.log('Saving receipt:', validated.data);
-
+  // For now, we add to our in-memory store.
+  addReceipt(validated.data as any);
+  
+  // Revalidate paths to show the new data
   revalidatePath('/receipts');
   revalidatePath('/dashboard');
 
   return { success: true, message: 'Receipt saved successfully!' };
 }
 
+
 export async function generateSpendingInsightsAction() {
   try {
-    const spendingData = JSON.stringify(mockReceipts);
+    const spendingData = JSON.stringify(getReceipts());
     const result = await generateSpendingInsightsFlow({ spendingData });
     return { insight: result.insights, error: null };
   } catch (error) {

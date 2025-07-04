@@ -1,7 +1,7 @@
 import { type Receipt, type SpendingByCategory } from '@/lib/types';
 import { subDays, formatISO } from 'date-fns';
 
-export const mockReceipts: Receipt[] = [
+const initialReceipts: Receipt[] = [
   {
     id: '1',
     merchant: 'FreshMart',
@@ -76,9 +76,28 @@ export const mockReceipts: Receipt[] = [
   },
 ];
 
+// This will act as our in-memory database for the session
+let receipts: Receipt[] = [...initialReceipts];
+
+export const getReceipts = (): Receipt[] => {
+  return receipts;
+};
+
+export const addReceipt = (receipt: Omit<Receipt, 'id' | 'imageUrl'>) => {
+    const newReceipt: Receipt = {
+        id: (receipts.length + 1).toString(),
+        ...receipt,
+        // The date from the form is a string like 'YYYY-MM-DD', convert to ISO string
+        date: new Date(receipt.date).toISOString(),
+        // Assign a random placeholder image
+        imageUrl: `https://placehold.co/${Math.floor(Math.random() * 200) + 400}x${Math.floor(Math.random() * 400) + 400}.png`,
+    };
+    receipts.unshift(newReceipt); // Add to the beginning of the array
+};
+
 export const getSpendingByCategory = (): SpendingByCategory[] => {
   const spendingMap: { [key: string]: number } = {};
-  mockReceipts.forEach((receipt) => {
+  getReceipts().forEach((receipt) => {
     if (spendingMap[receipt.category]) {
       spendingMap[receipt.category] += receipt.amount;
     } else {
@@ -93,5 +112,5 @@ export const getSpendingByCategory = (): SpendingByCategory[] => {
 };
 
 export const getTotalSpending = (): number => {
-  return mockReceipts.reduce((total, receipt) => total + receipt.amount, 0);
+  return getReceipts().reduce((total, receipt) => total + receipt.amount, 0);
 };

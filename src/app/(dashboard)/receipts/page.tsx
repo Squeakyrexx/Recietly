@@ -1,11 +1,11 @@
 import { ReceiptCard } from '@/components/receipts/receipt-card';
-import { mockReceipts } from '@/lib/mock-data';
+import { getReceipts } from '@/lib/mock-data';
 import { Button } from '@/components/ui/button';
 import Link from 'next/link';
 
 export default function ReceiptsPage() {
   // In a real app, this data would be fetched for the logged-in user
-  const receipts = mockReceipts;
+  const receipts = getReceipts();
 
   return (
     <div className="space-y-6">
