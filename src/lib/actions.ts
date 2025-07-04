@@ -74,6 +74,7 @@ export async function saveReceiptAction({ receiptData, photoDataUri }: { receipt
   
   revalidatePath('/receipts');
   revalidatePath('/dashboard');
+  revalidatePath('/budgets');
 
   return { success: true, message: 'Receipt saved successfully!' };
 }
@@ -101,6 +102,7 @@ export async function updateReceiptAction(receiptData: Receipt) {
   
   revalidatePath('/receipts');
   revalidatePath('/dashboard');
+  revalidatePath('/budgets');
 
   return { success: true, message: 'Receipt updated successfully!' };
 }
@@ -112,6 +114,7 @@ export async function deleteReceiptAction(id: string) {
     deleteReceipt(id);
     revalidatePath('/receipts');
     revalidatePath('/dashboard');
+    revalidatePath('/budgets');
     return { success: true, message: 'Receipt deleted.' };
 }
 

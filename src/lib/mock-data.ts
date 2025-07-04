@@ -41,10 +41,7 @@ export const addReceipt = (receipt: Omit<Receipt, 'id'>) => {
         id: (receipts.length + 1).toString() + Date.now(), // Make ID more unique
         ...receipt,
         // The date from the form is a string like 'YYYY-MM-DD'.
-        // To make it a valid ISO string that doesn't shift based on timezone, we can add T00:00:00.000Z
-        // However, this can cause "day behind" issues in some timezones.
         // A simple approach is to just store the YYYY-MM-DD and parse it carefully on the client.
-        // For this demo, we'll assume the date string is sufficient and just store it.
         date: isValidDate ? receipt.date : new Date().toISOString().split('T')[0],
     };
     receipts.unshift(newReceipt); // Add to the beginning of the array
@@ -73,9 +70,12 @@ export const getSpendingByCategory = ({ month }: { month: 'current' | 'all' }): 
     const now = new Date();
     const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1);
     const endOfMonth = new Date(now.getFullYear(), now.getMonth() + 1, 0);
+    endOfMonth.setHours(23, 59, 59, 999); // Make sure to include the entire last day of the month
     
     receiptsToProcess = receiptsToProcess.filter(r => {
-        const receiptDate = new Date(r.date);
+        // By replacing hyphens with slashes, we parse the date in the local timezone,
+        // which avoids "off-by-one-day" errors across different timezones.
+        const receiptDate = new Date(r.date.replace(/-/g, '\/'));
         return receiptDate >= startOfMonth && receiptDate <= endOfMonth;
     });
   }
@@ -100,9 +100,12 @@ export const getTotalSpending = ({ month }: { month: 'current' | 'all' }): numbe
         const now = new Date();
         const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1);
         const endOfMonth = new Date(now.getFullYear(), now.getMonth() + 1, 0);
+        endOfMonth.setHours(23, 59, 59, 999); // Make sure to include the entire last day of the month
 
         receiptsToProcess = receiptsToProcess.filter(r => {
-            const receiptDate = new Date(r.date);
+            // By replacing hyphens with slashes, we parse the date in the local timezone,
+            // which avoids "off-by-one-day" errors across different timezones.
+            const receiptDate = new Date(r.date.replace(/-/g, '\/'));
             return receiptDate >= startOfMonth && receiptDate <= endOfMonth;
         });
     }
