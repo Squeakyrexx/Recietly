@@ -1,6 +1,5 @@
 'use client';
 
-import { useFormStatus } from 'react-dom';
 import { useEffect, useRef, useState, useTransition } from 'react';
 import { extractReceiptDataAction, saveReceiptAction } from '@/lib/actions';
 import { useToast } from '@/hooks/use-toast';
@@ -24,22 +23,6 @@ const initialState: {
   errors: null,
 };
 
-function UploadButton() {
-  const { pending } = useFormStatus();
-  return (
-    <Button type="submit" disabled={pending} className="w-full">
-      {pending ? (
-        <>
-          <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-          Extracting Data...
-        </>
-      ) : (
-        'Process Receipt'
-      )}
-    </Button>
-  );
-}
-
 export function UploadForm() {
   const [extractionState, setExtractionState] = useState(initialState);
   const [isExtracting, startExtractionTransition] = useTransition();
@@ -53,11 +36,25 @@ export function UploadForm() {
   const [receiptData, setReceiptData] = useState<ExtractedReceiptData | null>(null);
   const [isSaving, startSavingTransition] = useTransition();
 
-  const clientAction = (formData: FormData) => {
-    setExtractionState(initialState); // Reset errors on new submission
+  const handleSubmit = (event: React.FormEvent<HTMLFormElement>) => {
+    event.preventDefault();
+
+    if (!file) {
+      toast({
+        title: 'Upload Error',
+        description: 'Please select a file to process.',
+        variant: 'destructive',
+      });
+      return;
+    }
+
+    const formData = new FormData();
+    formData.append('photo', file);
+
+    setExtractionState(initialState);
     startExtractionTransition(async () => {
-        const result = await extractReceiptDataAction(formData);
-        setExtractionState(result);
+      const result = await extractReceiptDataAction(formData);
+      setExtractionState(result);
     });
   };
 
@@ -147,7 +144,7 @@ export function UploadForm() {
         <div className="space-y-6">
             <div className="relative h-64 w-full rounded-lg overflow-hidden border">
                 {previewUrl ? (
-                    <Image src={previewUrl} alt="Receipt preview" layout="fill" objectFit="contain" />
+                    <Image src={previewUrl} alt="Receipt preview" fill objectFit="contain" />
                 ) : (
                     <div className="flex h-full w-full items-center justify-center bg-muted">
                         <ImageIcon className="h-16 w-16 text-muted-foreground" />
@@ -212,13 +209,13 @@ export function UploadForm() {
   }
 
   return (
-    <form ref={formRef} action={clientAction} className="space-y-6">
+    <form ref={formRef} onSubmit={handleSubmit} className="space-y-6">
       <div>
         <Label htmlFor="photo">Receipt Photo</Label>
         <div className="mt-2 flex justify-center rounded-lg border border-dashed border-border px-6 py-10">
           {previewUrl ? (
             <div className="relative h-48 w-48">
-              <Image src={previewUrl} alt="Receipt preview" layout="fill" objectFit="contain" />
+              <Image src={previewUrl} alt="Receipt preview" fill objectFit="contain" />
               <Button variant="ghost" size="icon" className="absolute -top-2 -right-2 bg-background rounded-full h-7 w-7" onClick={handleRemoveFile}>
                 <X className="h-4 w-4" />
               </Button>
@@ -249,7 +246,18 @@ export function UploadForm() {
         </p>
        </div>
        
-      {file && <UploadButton />}
+      {file && (
+        <Button type="submit" disabled={isExtracting} className="w-full">
+          {isExtracting ? (
+            <>
+              <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+              Extracting Data...
+            </>
+          ) : (
+            'Process Receipt'
+          )}
+        </Button>
+      )}
     </form>
   );
 }
