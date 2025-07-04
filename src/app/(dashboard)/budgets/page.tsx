@@ -5,9 +5,9 @@ import { CATEGORIES } from "@/lib/types";
 
 export const dynamic = 'force-dynamic';
 
-export default function BudgetsPage() {
-  const initialBudgets = getBudgets();
-  const spendingThisMonth = getSpendingByCategory({ month: 'current' });
+export default async function BudgetsPage() {
+  const initialBudgets = await getBudgets();
+  const spendingThisMonth = await getSpendingByCategory({ month: 'current' });
 
   // Ensure all categories have a budget entry, defaulting to 0
   const budgetsWithDefaults = CATEGORIES.reduce((acc, category) => {

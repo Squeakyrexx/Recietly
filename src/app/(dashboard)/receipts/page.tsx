@@ -5,9 +5,9 @@ import { ReceiptsList } from '@/components/receipts/receipts-list';
 
 export const dynamic = 'force-dynamic';
 
-export default function ReceiptsPage() {
+export default async function ReceiptsPage() {
   // In a real app, this data would be fetched for the logged-in user
-  const receipts = getReceipts();
+  const receipts = await getReceipts();
 
   return (
     <div className="space-y-6">

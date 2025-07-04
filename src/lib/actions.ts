@@ -65,7 +65,7 @@ export async function saveReceiptAction({ receiptData, photoDataUri }: { receipt
   // Use a placeholder if no image was provided (manual entry)
   const imageDataUri = photoDataUri || `https://placehold.co/600x400.png`;
   
-  addReceipt({ ...receiptToSave, imageDataUri });
+  await addReceipt({ ...receiptToSave, imageDataUri });
   
   // Revalidate the entire app to ensure all pages get fresh data
   revalidatePath('/', 'layout');
@@ -93,7 +93,7 @@ export async function updateReceiptAction(receiptData: Receipt) {
     description: validated.data.description || '',
   }
   
-  updateReceipt(receiptToUpdate);
+  await updateReceipt(receiptToUpdate);
   
   // Revalidate the entire app to ensure all pages get fresh data
   revalidatePath('/', 'layout');
@@ -105,7 +105,7 @@ export async function deleteReceiptAction(id: string) {
     if (!id) {
         return { success: false, message: 'No ID provided for deletion.' };
     }
-    deleteReceipt(id);
+    await deleteReceipt(id);
     
     // Revalidate the entire app to ensure all pages get fresh data
     revalidatePath('/', 'layout');
@@ -116,7 +116,8 @@ export async function deleteReceiptAction(id: string) {
 
 export async function generateSpendingInsightsAction() {
   try {
-    const spendingData = JSON.stringify(getReceipts());
+    const receipts = await getReceipts();
+    const spendingData = JSON.stringify(receipts);
     const result = await generateSpendingInsightsFlow({ spendingData });
     return { insight: result.insights, error: null };
   } catch (error) {
@@ -138,7 +139,7 @@ export async function setBudgetAction({ category, amount }: { category: Category
         return { success: false, message: `Invalid data: ${errorMessages}` };
     }
 
-    setBudget(validated.data);
+    await setBudget(validated.data);
     
     // Revalidate the entire app to ensure all pages get fresh data
     revalidatePath('/', 'layout');
