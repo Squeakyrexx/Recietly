@@ -1,4 +1,5 @@
 import { type Receipt, type SpendingByCategory, type Category, CATEGORIES } from '@/lib/types';
+import { noStore } from 'next/cache';
 
 /**
  * In-memory store for receipts and budgets.
@@ -35,6 +36,7 @@ export const addReceipt = (receipt: Omit<Receipt, 'id'>) => {
         id: Date.now().toString() + Math.random().toString(36), // Make ID more unique
         ...receipt,
         date: isValidDate ? receipt.date : new Date().toISOString().split('T')[0],
+        isBusinessExpense: receipt.isBusinessExpense || false,
     };
     globalForStore.receipts!.unshift(newReceipt); // Add to the beginning of the array
 };
@@ -61,7 +63,8 @@ export const getSpendingByCategory = ({ month }: { month: 'current' | 'all' }): 
     const currentMonth = now.getMonth();
     
     receiptsToProcess = receiptsToProcess.filter(r => {
-        // Use the replace trick to parse date string in local timezone
+        // By replacing hyphens with slashes, we parse the date in the local timezone,
+        // which avoids "off-by-one-day" errors across different timezones.
         const receiptDate = new Date(r.date.replace(/-/g, '/'));
         
         // Check if the date is valid before trying to get parts of it
@@ -70,10 +73,7 @@ export const getSpendingByCategory = ({ month }: { month: 'current' | 'all' }): 
             return false;
         }
         
-        const receiptYear = receiptDate.getFullYear();
-        const receiptMonth = receiptDate.getMonth();
-        
-        return receiptYear === currentYear && receiptMonth === currentMonth;
+        return receiptDate.getFullYear() === currentYear && receiptDate.getMonth() === currentMonth;
     });
   }
   

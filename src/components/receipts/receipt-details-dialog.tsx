@@ -28,9 +28,10 @@ import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Textarea } from '@/components/ui/textarea';
 import { type Receipt, CATEGORIES } from '@/lib/types';
-import { Loader2, Save, Trash2 } from 'lucide-react';
+import { Loader2, Save, Trash2, Briefcase } from 'lucide-react';
 import { updateReceiptAction, deleteReceiptAction } from '@/lib/actions';
 import { useToast } from '@/hooks/use-toast';
+import { Switch } from '../ui/switch';
 
 interface ReceiptDetailsDialogProps {
   open: boolean;
@@ -58,8 +59,8 @@ export function ReceiptDetailsDialog({
 
   if (!editedReceipt) return null;
 
-  const handleFieldChange = (field: keyof Omit<Receipt, 'id' | 'imageDataUri'>, value: string | number) => {
-    setEditedReceipt({ ...editedReceipt, [field]: value });
+  const handleFieldChange = (field: keyof Omit<Receipt, 'id' | 'imageDataUri'>, value: string | number | boolean) => {
+    setEditedReceipt({ ...editedReceipt, [field]: value } as Receipt);
   };
   
   const handleSave = () => {
@@ -177,6 +178,22 @@ export function ReceiptDetailsDialog({
                 id="edit-description"
                 value={editedReceipt.description}
                 onChange={(e) => handleFieldChange('description', e.target.value)}
+              />
+            </div>
+            <div className="flex items-center space-x-3 rounded-md border p-3">
+              <Briefcase className="h-5 w-5 text-muted-foreground flex-shrink-0" />
+              <div className="flex-1">
+                <Label htmlFor="edit-is-business-expense" className="font-medium cursor-pointer">
+                  Business Expense
+                </Label>
+                <p className="text-xs text-muted-foreground">
+                  Mark this if it's a tax-deductible expense.
+                </p>
+              </div>
+              <Switch
+                id="edit-is-business-expense"
+                checked={!!editedReceipt.isBusinessExpense}
+                onCheckedChange={(checked) => handleFieldChange('isBusinessExpense', checked)}
               />
             </div>
           </div>

@@ -16,13 +16,16 @@ import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Textarea } from '@/components/ui/textarea';
 import { type ExtractedReceiptData, CATEGORIES } from '@/lib/types';
-import { Loader2, Save } from 'lucide-react';
+import { Loader2, Save, Briefcase } from 'lucide-react';
+import { Switch } from '@/components/ui/switch';
+
+type EditableReceiptData = ExtractedReceiptData & { isBusinessExpense?: boolean };
 
 interface ConfirmationDialogProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
-  receiptData: ExtractedReceiptData | null;
-  setReceiptData: (data: ExtractedReceiptData | null) => void;
+  receiptData: EditableReceiptData | null;
+  setReceiptData: (data: EditableReceiptData | null) => void;
   previewUrl: string | null;
   onSave: () => void;
   isSaving: boolean;
@@ -39,7 +42,7 @@ export function ConfirmationDialog({
 }: ConfirmationDialogProps) {
   if (!receiptData) return null;
 
-  const handleFieldChange = (field: keyof ExtractedReceiptData, value: string | number) => {
+  const handleFieldChange = (field: keyof EditableReceiptData, value: string | number | boolean) => {
     setReceiptData({ ...receiptData, [field]: value });
   };
 
@@ -114,6 +117,22 @@ export function ConfirmationDialog({
                 id="confirm-description"
                 value={receiptData.description}
                 onChange={(e) => handleFieldChange('description', e.target.value)}
+              />
+            </div>
+            <div className="flex items-center space-x-3 rounded-md border p-3">
+              <Briefcase className="h-5 w-5 text-muted-foreground flex-shrink-0" />
+              <div className="flex-1">
+                <Label htmlFor="is-business-expense" className="font-medium cursor-pointer">
+                  Business Expense
+                </Label>
+                <p className="text-xs text-muted-foreground">
+                  Mark this if it's a tax-deductible expense.
+                </p>
+              </div>
+              <Switch
+                id="is-business-expense"
+                checked={!!receiptData.isBusinessExpense}
+                onCheckedChange={(checked) => handleFieldChange('isBusinessExpense', checked)}
               />
             </div>
           </div>

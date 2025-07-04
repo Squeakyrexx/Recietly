@@ -12,6 +12,7 @@ export type Receipt = {
   category: Category;
   description: string;
   imageDataUri: string;
+  isBusinessExpense?: boolean;
 };
 
 export type SpendingByCategory = {

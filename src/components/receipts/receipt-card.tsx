@@ -4,7 +4,7 @@ import { type Receipt } from '@/lib/types';
 import { Badge } from '@/components/ui/badge';
 import { getIconForCategory } from '@/components/icons';
 import { format } from 'date-fns';
-import { FileImage } from 'lucide-react';
+import { FileImage, Briefcase } from 'lucide-react';
 
 export function ReceiptCard({ receipt }: { receipt: Receipt }) {
   const Icon = getIconForCategory(receipt.category);
@@ -42,9 +42,16 @@ export function ReceiptCard({ receipt }: { receipt: Receipt }) {
         <p className="text-sm text-muted-foreground line-clamp-2">{receipt.description}</p>
       </CardContent>
       <CardFooter className="flex items-center justify-between p-4 pt-0 text-xs text-muted-foreground">
-        <div className="flex items-center gap-1">
-            <Icon className="h-4 w-4" />
-            <span>{receipt.category}</span>
+        <div className="flex items-center gap-2">
+            <div className="flex items-center gap-1">
+                <Icon className="h-4 w-4" />
+                <span>{receipt.category}</span>
+            </div>
+            {receipt.isBusinessExpense && (
+                <div className="flex items-center gap-1 text-accent font-semibold">
+                    <Briefcase className="h-3 w-3" />
+                </div>
+            )}
         </div>
         <time dateTime={receipt.date}>{formattedDate}</time>
       </CardFooter>

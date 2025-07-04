@@ -12,6 +12,8 @@ import Image from 'next/image';
 import { ConfirmationDialog } from './confirmation-dialog';
 import { useRouter } from 'next/navigation';
 
+type EditableReceiptData = ExtractedReceiptData & { isBusinessExpense?: boolean };
+
 export function UploadForm() {
   const [isExtracting, startExtractionTransition] = useTransition();
   const [isSaving, startSavingTransition] = useTransition();
@@ -22,7 +24,7 @@ export function UploadForm() {
   const [previewUrl, setPreviewUrl] = useState<string | null>(null);
   const [photoDataUri, setPhotoDataUri] = useState<string | null>(null);
   const [isConfirming, setIsConfirming] = useState(false);
-  const [receiptData, setReceiptData] = useState<ExtractedReceiptData | null>(null);
+  const [receiptData, setReceiptData] = useState<EditableReceiptData | null>(null);
 
   const fileInputRef = useRef<HTMLInputElement>(null);
 
@@ -55,7 +57,7 @@ export function UploadForm() {
       const result = await extractReceiptDataAction({ photoDataUri });
 
       if (result.data) {
-        setReceiptData(result.data);
+        setReceiptData({ ...result.data, isBusinessExpense: false });
         setIsConfirming(true);
         toast({
           title: 'Data Extracted',
@@ -111,6 +113,7 @@ export function UploadForm() {
         date: new Date().toISOString().split('T')[0],
         category: 'Other',
         description: '',
+        isBusinessExpense: false,
     });
     setPreviewUrl(null);
     setPhotoDataUri(null);

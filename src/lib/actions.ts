@@ -46,9 +46,10 @@ const receiptDataSchema = z.object({
   date: z.string().min(1, 'Date is required.'),
   category: z.enum(CATEGORIES),
   description: z.string().optional(),
+  isBusinessExpense: z.boolean().optional(),
 });
 
-export async function saveReceiptAction({ receiptData, photoDataUri }: { receiptData: ExtractedReceiptData, photoDataUri: string | null }) {
+export async function saveReceiptAction({ receiptData, photoDataUri }: { receiptData: ExtractedReceiptData & { isBusinessExpense?: boolean }, photoDataUri: string | null }) {
   const validated = receiptDataSchema.safeParse(receiptData);
 
   if (!validated.success) {
@@ -75,6 +76,7 @@ export async function saveReceiptAction({ receiptData, photoDataUri }: { receipt
 const updateSchema = z.object({
     id: z.string(),
     imageDataUri: z.string(),
+    isBusinessExpense: z.boolean().optional(),
 }).merge(receiptDataSchema);
 
 
