@@ -37,7 +37,7 @@ function UploadButton() {
 }
 
 export function UploadForm() {
-  const [extractionState, formAction] = useActionState(extractReceiptDataAction, initialState);
+  const [extractionState, formAction, isExtracting] = useActionState(extractReceiptDataAction, initialState);
   const { toast } = useToast();
   const formRef = useRef<HTMLFormElement>(null);
   
@@ -49,6 +49,8 @@ export function UploadForm() {
   const [isSaving, startSavingTransition] = useTransition();
 
   useEffect(() => {
+    if (isExtracting) return; // Don't show toasts while the action is pending
+
     if (extractionState.data) {
       setReceiptData(extractionState.data);
       setView('confirm');
@@ -56,14 +58,14 @@ export function UploadForm() {
         title: 'Data Extracted',
         description: 'Please review the information below and save.',
       });
-    } else if (extractionState.message && (extractionState.errors?._form || extractionState.errors?.photo)) {
+    } else if (extractionState.errors) {
        toast({
-        title: 'Error',
-        description: extractionState.errors?._form?.[0] || extractionState.errors?.photo?.[0] || extractionState.message,
+        title: 'Upload Error',
+        description: extractionState.errors?.photo?.[0] || extractionState.errors?._form?.[0] || 'An unknown error occurred.',
         variant: 'destructive',
       });
     }
-  }, [extractionState, toast]);
+  }, [extractionState, isExtracting, toast]);
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const selectedFile = e.target.files?.[0];
@@ -153,7 +155,7 @@ export function UploadForm() {
                         </div>
                          <div className="space-y-1.5">
                             <Label htmlFor="confirm-amount">Amount</Label>
-                            <Input id="confirm-amount" type="number" step="0.01" value={receiptData.amount} onChange={e => setReceiptData({...receiptData, amount: parseFloat(e.target.value)})} />
+                            <Input id="confirm-amount" type="number" step="0.01" value={receiptData.amount} onChange={e => setReceiptData({...receiptData, amount: parseFloat(e.target.value) || 0})} />
                         </div>
                          <div className="space-y-1.5">
                             <Label htmlFor="confirm-date">Date</Label>
@@ -223,7 +225,7 @@ export function UploadForm() {
             </div>
           )}
         </div>
-        {extractionState.errors?.photo && <p className="text-sm text-destructive mt-1">{extractionState.errors.photo[0]}</p>}
+        {extractionState?.errors?.photo && !isExtracting && <p className="text-sm text-destructive mt-1">{extractionState.errors.photo[0]}</p>}
       </div>
 
        <div className="text-center">

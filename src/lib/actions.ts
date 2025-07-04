@@ -6,23 +6,14 @@ import { mockReceipts } from '@/lib/mock-data';
 import { revalidatePath } from 'next/cache';
 import { z } from 'zod';
 
-// We are replacing Zod validation for the upload with manual checks to debug a persistent issue.
 export async function extractReceiptDataAction(prevState: any, formData: FormData) {
-  const photo = formData.get('photo');
+  const photo = formData.get('photo') as File | null;
 
-  // Manual validation
-  if (!photo || !(photo instanceof File) || photo.size === 0) {
+  // More robust validation
+  if (!photo || photo.size === 0) {
     return {
-      message: 'A receipt image is required.',
-      errors: { photo: ['A receipt image is required.'] },
-      data: null,
-    };
-  }
-
-  if (photo.size > 10 * 1024 * 1024) {
-    return {
-      message: 'File size must be less than 10MB.',
-      errors: { photo: ['File size must be less than 10MB.'] },
+      message: 'Validation failed.',
+      errors: { photo: ['A receipt image is required. Please select a file.'] },
       data: null,
     };
   }
@@ -30,8 +21,17 @@ export async function extractReceiptDataAction(prevState: any, formData: FormDat
   const allowedTypes = ['image/jpeg', 'image/png', 'image/gif', 'image/webp'];
   if (!allowedTypes.includes(photo.type)) {
     return {
-      message: 'Only .jpg, .png, .gif, and .webp formats are supported.',
-      errors: { photo: ['Only .jpg, .png, .gif, and .webp formats are supported.'] },
+      message: 'Invalid file type.',
+      errors: { photo: ['Invalid file type. Please upload a JPG, PNG, GIF, or WEBP image.'] },
+      data: null,
+    };
+  }
+
+  const MAX_FILE_SIZE_MB = 10;
+  if (photo.size > MAX_FILE_SIZE_MB * 1024 * 1024) {
+    return {
+      message: 'File size limit exceeded.',
+      errors: { photo: [`The image must be less than ${MAX_FILE_SIZE_MB}MB.`] },
       data: null,
     };
   }
@@ -46,11 +46,11 @@ export async function extractReceiptDataAction(prevState: any, formData: FormDat
 
     return { message: 'Data extracted. Please review.', data: extractedData, errors: null };
   } catch (error) {
-    console.error(error);
+    console.error('Error in extractReceiptDataAction:', error);
     return {
       message: 'An error occurred while processing the receipt.',
       data: null,
-      errors: { _form: ['AI processing failed. Please try again or enter details manually.'] },
+      errors: { _form: ['AI processing failed. The image might be unreadable or a server error occurred. Please try again.'] },
     };
   }
 }
