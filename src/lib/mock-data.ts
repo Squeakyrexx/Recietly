@@ -26,6 +26,8 @@ export const getReceipts = (): Receipt[] => {
 };
 
 export const addReceipt = (receipt: Omit<Receipt, 'id'>) => {
+    // By replacing hyphens with slashes, we parse the date in the local timezone,
+    // which avoids "off-by-one-day" errors across different timezones.
     const d = new Date(receipt.date.replace(/-/g, '/'));
     const isValidDate = !isNaN(d.getTime());
     
@@ -48,12 +50,12 @@ export const deleteReceipt = (id: string) => {
     globalForStore.receipts = globalForStore.receipts!.filter(r => r.id !== id);
 }
 
-const getMonthDateRange = () => {
+const getCurrentMonthAndYear = () => {
     const now = new Date();
-    const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1);
-    const endOfMonth = new Date(now.getFullYear(), now.getMonth() + 1, 0);
-    endOfMonth.setHours(23, 59, 59, 999); // Ensure to include the entire last day
-    return { startOfMonth, endOfMonth };
+    return {
+        year: now.getFullYear(),
+        month: now.getMonth(), // 0-indexed (0 for January)
+    };
 }
 
 export const getSpendingByCategory = ({ month }: { month: 'current' | 'all' }): SpendingByCategory[] => {
@@ -62,13 +64,18 @@ export const getSpendingByCategory = ({ month }: { month: 'current' | 'all' }): 
   let receiptsToProcess = getReceipts();
   
   if (month === 'current') {
-    const { startOfMonth, endOfMonth } = getMonthDateRange();
+    const { year: currentYear, month: currentMonth } = getCurrentMonthAndYear();
     
     receiptsToProcess = receiptsToProcess.filter(r => {
-        // By replacing hyphens with slashes, we parse the date in the local timezone,
-        // which avoids "off-by-one-day" errors across different timezones.
-        const receiptDate = new Date(r.date.replace(/-/g, '/'));
-        return receiptDate >= startOfMonth && receiptDate <= endOfMonth;
+        try {
+            const [year, month] = r.date.split('-').map(Number);
+            // month in date string is 1-indexed, so we subtract 1 for comparison
+            return year === currentYear && (month - 1) === currentMonth;
+        } catch (e) {
+            // In case date format is wrong for some reason
+            console.error(`Invalid date format for receipt ${r.id}: ${r.date}`);
+            return false;
+        }
     });
   }
   
@@ -89,11 +96,17 @@ export const getSpendingByCategory = ({ month }: { month: 'current' | 'all' }): 
 export const getTotalSpending = ({ month }: { month: 'current' | 'all' }): number => {
     let receiptsToProcess = getReceipts();
     if (month === 'current') {
-        const { startOfMonth, endOfMonth } = getMonthDateRange();
+        const { year: currentYear, month: currentMonth } = getCurrentMonthAndYear();
 
         receiptsToProcess = receiptsToProcess.filter(r => {
-            const receiptDate = new Date(r.date.replace(/-/g, '/'));
-            return receiptDate >= startOfMonth && receiptDate <= endOfMonth;
+            try {
+                const [year, month] = r.date.split('-').map(Number);
+                 // month in date string is 1-indexed, so we subtract 1 for comparison
+                return year === currentYear && (month - 1) === currentMonth;
+            } catch(e) {
+                console.error(`Invalid date format for receipt: ${r.date}`);
+                return false;
+            }
         });
     }
   return receiptsToProcess.reduce((total, receipt) => total + receipt.amount, 0);
