@@ -8,10 +8,10 @@ export type Receipt = {
   id: string;
   merchant: string;
   amount: number;
-  date: string; // ISO string for simplicity
+  date: string; // Storing as YYYY-MM-DD string
   category: Category;
   description: string;
-  imageUrl: string;
+  imageDataUri: string;
 };
 
 export type SpendingByCategory = {

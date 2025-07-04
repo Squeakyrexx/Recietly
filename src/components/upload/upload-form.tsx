@@ -20,6 +20,7 @@ export function UploadForm() {
   
   const [file, setFile] = useState<File | null>(null);
   const [previewUrl, setPreviewUrl] = useState<string | null>(null);
+  const [photoDataUri, setPhotoDataUri] = useState<string | null>(null);
   const [isConfirming, setIsConfirming] = useState(false);
   const [receiptData, setReceiptData] = useState<ExtractedReceiptData | null>(null);
 
@@ -29,13 +30,19 @@ export function UploadForm() {
     const selectedFile = e.target.files?.[0];
     if (selectedFile) {
       setFile(selectedFile);
-      const url = URL.createObjectURL(selectedFile);
-      setPreviewUrl(url);
+      
+      const reader = new FileReader();
+      reader.onloadend = () => {
+          const dataUri = reader.result as string;
+          setPreviewUrl(dataUri);
+          setPhotoDataUri(dataUri);
+      };
+      reader.readAsDataURL(selectedFile);
     }
   };
 
   const handleProcessReceipt = () => {
-    if (!file) {
+    if (!file || !photoDataUri) {
       toast({
         title: 'Upload Error',
         description: 'Please select a file to process.',
@@ -45,10 +52,7 @@ export function UploadForm() {
     }
 
     startExtractionTransition(async () => {
-      const formData = new FormData();
-      formData.append('photo', file);
-      
-      const result = await extractReceiptDataAction(formData);
+      const result = await extractReceiptDataAction({ photoDataUri });
 
       if (result.data) {
         setReceiptData(result.data);
@@ -60,7 +64,7 @@ export function UploadForm() {
       } else {
         toast({
           title: 'Extraction Error',
-          description: result.errors?._form?.[0] || 'Could not extract data from the image.',
+          description: result.error || 'Could not extract data from the image.',
           variant: 'destructive',
         });
       }
@@ -71,7 +75,7 @@ export function UploadForm() {
     if (!receiptData) return;
     
     startSavingTransition(async () => {
-        const result = await saveReceiptAction({ receiptData });
+        const result = await saveReceiptAction({ receiptData, photoDataUri });
         if (result.success) {
             toast({
                 title: 'Success!',
@@ -92,6 +96,7 @@ export function UploadForm() {
   const resetForm = () => {
     setFile(null);
     setPreviewUrl(null);
+    setPhotoDataUri(null);
     setReceiptData(null);
     setIsConfirming(false);
     if (fileInputRef.current) {
@@ -108,6 +113,7 @@ export function UploadForm() {
         description: '',
     });
     setPreviewUrl(null);
+    setPhotoDataUri(null);
     setIsConfirming(true);
   };
   
@@ -136,6 +142,7 @@ export function UploadForm() {
                   onClick={() => {
                     setFile(null);
                     setPreviewUrl(null);
+                    setPhotoDataUri(null);
                     if (fileInputRef.current) fileInputRef.current.value = "";
                   }}
                 >

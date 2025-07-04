@@ -10,6 +10,7 @@
 
 import {ai} from '@/ai/genkit';
 import {z} from 'genkit';
+import { CATEGORIES } from '@/lib/types';
 
 const ExtractReceiptDataInputSchema = z.object({
   photoDataUri: z
@@ -29,7 +30,7 @@ const ExtractReceiptDataOutputSchema = z.object({
   merchant: z.string().describe('The name of the merchant.'),
   amount: z.number().describe('The total amount of the receipt.'),
   date: z.string().describe('The date of the transaction in YYYY-MM-DD format.'),
-  category: z.string().describe('The category of the expense.'),
+  category: z.enum(CATEGORIES).describe('The category of the expense.'),
   description: z.string().describe('A short description of the purchase.'),
 });
 export type ExtractReceiptDataOutput = z.infer<typeof ExtractReceiptDataOutputSchema>;
@@ -45,9 +46,9 @@ const prompt = ai.definePrompt({
   prompt: `You are an expert accounting assistant specializing in extracting data from receipts.
 
   You will use this information to extract the merchant, amount, date, category, and description from the receipt.
-  The category must be one of the following: Groceries, Transport, Entertainment, Utilities, Dining, Other.
+  The category must be one of the following: ${CATEGORIES.join(', ')}.
   The date should be in YYYY-MM-DD format.
-  The description MUST be a brief, one-sentence summary of the purchase and should NOT be the same as the category name. For example, if the category is 'Groceries', a good description would be 'Weekly grocery shopping' or 'Purchase of fresh produce'. A bad description would be 'Groceries'.
+  The description MUST be a brief, one-sentence summary of the purchase and MUST NOT be the same as the category name. For instance, if the category is 'Groceries', a good description is 'Weekly grocery shopping at Trader Joe's' or 'Purchase of fresh produce and snacks'. A bad description would simply be 'Groceries'. Be creative and descriptive.
 
   If the user has provided values for any of these fields, you must use those values instead of the values you extract from the receipt.
 

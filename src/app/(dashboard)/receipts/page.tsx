@@ -1,7 +1,7 @@
-import { ReceiptCard } from '@/components/receipts/receipt-card';
 import { getReceipts } from '@/lib/mock-data';
 import { Button } from '@/components/ui/button';
 import Link from 'next/link';
+import { ReceiptsList } from '@/components/receipts/receipts-list';
 
 export default function ReceiptsPage() {
   // In a real app, this data would be fetched for the logged-in user
@@ -18,22 +18,7 @@ export default function ReceiptsPage() {
           <Button>Upload New Receipt</Button>
         </Link>
       </header>
-
-      {receipts.length > 0 ? (
-        <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4">
-          {receipts.map((receipt) => (
-            <ReceiptCard key={receipt.id} receipt={receipt} />
-          ))}
-        </div>
-      ) : (
-        <div className="flex flex-col items-center justify-center rounded-lg border-2 border-dashed p-12 text-center">
-            <h3 className="text-xl font-semibold">No receipts yet</h3>
-            <p className="text-sm text-muted-foreground mb-4">Upload your first receipt to get started.</p>
-            <Link href="/upload">
-                <Button>Upload Receipt</Button>
-            </Link>
-        </div>
-      )}
+      <ReceiptsList initialReceipts={receipts} />
     </div>
   );
 }

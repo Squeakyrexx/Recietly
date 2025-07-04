@@ -7,19 +7,21 @@ import { format } from 'date-fns';
 
 export function ReceiptCard({ receipt }: { receipt: Receipt }) {
   const Icon = getIconForCategory(receipt.category);
-  const formattedDate = format(new Date(receipt.date), 'MMM d, yyyy');
+  // Add a timezone offset to prevent date-fns from showing the previous day
+  const timeZoneOffset = new Date().getTimezoneOffset() * 60000;
+  const formattedDate = format(new Date(receipt.date).getTime() + timeZoneOffset, 'MMM d, yyyy');
+
 
   return (
-    <Card className="flex flex-col overflow-hidden transition-transform hover:scale-105 hover:shadow-lg">
+    <Card className="flex flex-col overflow-hidden transition-transform duration-200 hover:scale-105 hover:shadow-lg">
       <CardHeader className="p-0">
-        <div className="relative aspect-[4/3] w-full">
+        <div className="relative aspect-[4/3] w-full bg-muted">
           <Image
-            src={receipt.imageUrl}
+            src={receipt.imageDataUri}
             alt={`Receipt from ${receipt.merchant}`}
             fill
             className="object-cover"
             sizes="(max-width: 640px) 100vw, (max-width: 768px) 50vw, 33vw"
-            data-ai-hint="receipt scan"
           />
         </div>
       </CardHeader>
@@ -30,7 +32,7 @@ export function ReceiptCard({ receipt }: { receipt: Receipt }) {
                 ${receipt.amount.toFixed(2)}
             </Badge>
         </div>
-        <p className="text-sm text-muted-foreground">{receipt.description}</p>
+        <p className="text-sm text-muted-foreground line-clamp-2">{receipt.description}</p>
       </CardContent>
       <CardFooter className="flex items-center justify-between p-4 pt-0 text-xs text-muted-foreground">
         <div className="flex items-center gap-1">

@@ -24,7 +24,7 @@ export const getReceipts = (): Receipt[] => {
   return [...receipts].sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
 };
 
-export const addReceipt = (receipt: Omit<Receipt, 'id' | 'imageUrl'>) => {
+export const addReceipt = (receipt: Omit<Receipt, 'id'>) => {
     const d = new Date(receipt.date);
     // The `.toISOString()` method will throw a RangeError for an invalid date.
     // We check if the date is valid. If not, we default to the current date to avoid a crash.
@@ -33,12 +33,22 @@ export const addReceipt = (receipt: Omit<Receipt, 'id' | 'imageUrl'>) => {
     const newReceipt: Receipt = {
         id: (receipts.length + 1).toString() + Date.now(), // Make ID more unique
         ...receipt,
-        date: isValidDate ? d.toISOString() : new Date().toISOString(),
-        // Assign a random placeholder image
-        imageUrl: `https://placehold.co/${Math.floor(Math.random() * 200) + 400}x${Math.floor(Math.random() * 400) + 400}.png`,
+        // The date from the form is a string like 'YYYY-MM-DD'.
+        // To make it a valid ISO string that doesn't shift based on timezone, we can add T00:00:00.000Z
+        // However, this can cause "day behind" issues in some timezones.
+        // A simple approach is to just store the YYYY-MM-DD and parse it carefully on the client.
+        // For this demo, we'll assume the date string is sufficient and just store it.
+        date: isValidDate ? receipt.date : new Date().toISOString().split('T')[0],
     };
     receipts.unshift(newReceipt); // Add to the beginning of the array
 };
+
+export const updateReceipt = (updatedReceipt: Receipt) => {
+    const index = receipts.findIndex(r => r.id === updatedReceipt.id);
+    if (index !== -1) {
+        receipts[index] = updatedReceipt;
+    }
+}
 
 export const getSpendingByCategory = (): SpendingByCategory[] => {
   const spendingMap: { [key: string]: number } = {};

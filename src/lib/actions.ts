@@ -2,60 +2,28 @@
 
 import { extractReceiptData as extractReceiptDataFlow } from '@/ai/flows/extract-receipt-data';
 import { generateSpendingInsights as generateSpendingInsightsFlow } from '@/ai/flows/generate-spending-insights';
-import { addReceipt, getReceipts } from '@/lib/mock-data';
+import { addReceipt, getReceipts, updateReceipt } from '@/lib/mock-data';
 import { revalidatePath } from 'next/cache';
 import { z } from 'zod';
-import { type ExtractedReceiptData, CATEGORIES } from './types';
+import { type ExtractedReceiptData, CATEGORIES, type Receipt } from './types';
 
-export async function extractReceiptDataAction(formData: FormData) {
-  const photo = formData.get('photo') as File | null;
-
-  if (!photo || photo.size === 0) {
-    return {
-      message: 'Validation failed.',
-      errors: { _form: ['A receipt image is required. Please select a file.'] },
-      data: null,
-    };
-  }
-
-  const allowedTypes = ['image/jpeg', 'image/png', 'image/gif', 'image/webp'];
-  if (!allowedTypes.includes(photo.type)) {
-    return {
-      message: 'Invalid file type.',
-      errors: { _form: ['Invalid file type. Please upload a JPG, PNG, GIF, or WEBP image.'] },
-      data: null,
-    };
-  }
-
-  const MAX_FILE_SIZE_MB = 10;
-  if (photo.size > MAX_FILE_SIZE_MB * 1024 * 1024) {
-    return {
-      message: 'File size limit exceeded.',
-      errors: { _form: [`The image must be less than ${MAX_FILE_SIZE_MB}MB.`] },
-      data: null,
-    };
-  }
-
+export async function extractReceiptDataAction({photoDataUri}: {photoDataUri: string}) {
   try {
-    const fileBuffer = await photo.arrayBuffer();
-    const photoDataUri = `data:${photo.type};base64,${Buffer.from(fileBuffer).toString('base64')}`;
-
     const extractedData = await extractReceiptDataFlow({
       photoDataUri,
     });
-
-    return { message: 'Data extracted. Please review.', data: extractedData, errors: null };
+    return { message: 'Data extracted. Please review.', data: extractedData, error: null };
   } catch (error) {
     console.error('Error in extractReceiptDataAction:', error);
     return {
       message: 'An error occurred while processing the receipt.',
       data: null,
-      errors: { _form: ['AI processing failed. The image might be unreadable or a server error occurred. Please try again.'] },
+      error: 'AI processing failed. The image might be unreadable or a server error occurred. Please try again.',
     };
   }
 }
 
-const saveSchema = z.object({
+const receiptDataSchema = z.object({
   merchant: z.string().min(1, 'Merchant is required.'),
   amount: z.coerce.number().positive('Amount must be positive.'),
   date: z.string().min(1, 'Date is required.'),
@@ -63,8 +31,14 @@ const saveSchema = z.object({
   description: z.string().optional(),
 });
 
-export async function saveReceiptAction({ receiptData }: { receiptData: ExtractedReceiptData }) {
-  const validated = saveSchema.safeParse(receiptData);
+const saveSchema = z.object({
+  receiptData: receiptDataSchema,
+  photoDataUri: z.string().nullable(), // Allow null for manual entry
+});
+
+
+export async function saveReceiptAction({ receiptData, photoDataUri }: { receiptData: ExtractedReceiptData, photoDataUri: string | null }) {
+  const validated = receiptDataSchema.safeParse(receiptData);
 
   if (!validated.success) {
     const errorMessages = validated.error.errors.map(e => e.message).join(', ');
@@ -75,14 +49,43 @@ export async function saveReceiptAction({ receiptData }: { receiptData: Extracte
     ...validated.data,
     description: validated.data.description || '', // Ensure description is a string
   }
+
+  // Use a placeholder if no image was provided (manual entry)
+  const imageDataUri = photoDataUri || `https://placehold.co/600x400.png`;
   
-  addReceipt(receiptToSave);
+  addReceipt({ ...receiptToSave, imageDataUri });
   
-  // Revalidate paths to show the new data
   revalidatePath('/receipts');
   revalidatePath('/dashboard');
 
   return { success: true, message: 'Receipt saved successfully!' };
+}
+
+const updateSchema = z.object({
+    id: z.string(),
+    imageDataUri: z.string(),
+}).merge(receiptDataSchema);
+
+
+export async function updateReceiptAction(receiptData: Receipt) {
+  const validated = updateSchema.safeParse(receiptData);
+
+  if (!validated.success) {
+    const errorMessages = validated.error.errors.map(e => e.message).join(', ');
+    return { success: false, message: `Invalid data: ${errorMessages}` };
+  }
+  
+  const receiptToUpdate = {
+    ...validated.data,
+    description: validated.data.description || '',
+  }
+  
+  updateReceipt(receiptToUpdate);
+  
+  revalidatePath('/receipts');
+  revalidatePath('/dashboard');
+
+  return { success: true, message: 'Receipt updated successfully!' };
 }
 
 
