@@ -33,7 +33,7 @@ export default function UploadPage() {
               </div>
             </div>
           ) : (
-            <UploadForm />
+            <UploadForm user={user} />
           )}
         </CardContent>
       </Card>

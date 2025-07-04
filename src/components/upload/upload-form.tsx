@@ -12,16 +12,15 @@ import { type ExtractedReceiptData } from '@/lib/types';
 import Image from 'next/image';
 import { ConfirmationDialog } from './confirmation-dialog';
 import { useRouter } from 'next/navigation';
-import { useAuth } from '@/context/auth-context';
+import type { User } from 'firebase/auth';
 
 type EditableReceiptData = ExtractedReceiptData & { isBusinessExpense?: boolean };
 
-export function UploadForm() {
+export function UploadForm({ user }: { user: User }) {
   const [isExtracting, startExtractionTransition] = useTransition();
   const [isSaving, startSavingTransition] = useTransition();
   const { toast } = useToast();
   const router = useRouter();
-  const { user } = useAuth();
   
   const [file, setFile] = useState<File | null>(null);
   const [previewUrl, setPreviewUrl] = useState<string | null>(null);
