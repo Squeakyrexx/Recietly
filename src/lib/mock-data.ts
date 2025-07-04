@@ -1,5 +1,4 @@
 import { type Receipt, type SpendingByCategory, type Category, CATEGORIES } from '@/lib/types';
-import { noStore } from 'next/cache';
 
 /**
  * In-memory store for receipts and budgets.
@@ -22,7 +21,6 @@ if (!globalForStore.budgets) {
 }
 
 export const getReceipts = (): Receipt[] => {
-  noStore();
   // Return receipts sorted by date, newest first.
   return [...globalForStore.receipts!].sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
 };
@@ -59,7 +57,6 @@ const getMonthDateRange = () => {
 }
 
 export const getSpendingByCategory = ({ month }: { month: 'current' | 'all' }): SpendingByCategory[] => {
-  noStore();
   const spendingMap: { [key: string]: number } = {};
   
   // We call getReceipts() here which is now also dynamic
@@ -91,7 +88,6 @@ export const getSpendingByCategory = ({ month }: { month: 'current' | 'all' }): 
 };
 
 export const getTotalSpending = ({ month }: { month: 'current' | 'all' }): number => {
-    noStore();
     // We call getReceipts() here which is now also dynamic
     let receiptsToProcess = getReceipts();
     if (month === 'current') {
@@ -106,7 +102,6 @@ export const getTotalSpending = ({ month }: { month: 'current' | 'all' }): numbe
 };
 
 export const getBudgets = (): { [key in Category]?: number } => {
-    noStore();
     return globalForStore.budgets!;
 }
 
