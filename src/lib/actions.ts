@@ -6,45 +6,52 @@ import { mockReceipts } from '@/lib/mock-data';
 import { revalidatePath } from 'next/cache';
 import { z } from 'zod';
 
-const uploadSchema = z.object({
-  photo: z
-    .instanceof(File, { message: 'A receipt image is required.' })
-    .refine((file) => file.size > 0, 'A receipt image is required.')
-    .refine((file) => file.size < 10 * 1024 * 1024, 'File size must be less than 10MB.')
-    .refine(
-      (file) => ['image/jpeg', 'image/png', 'image/gif', 'image/webp'].includes(file.type),
-      'Only .jpg, .png, .gif, and .webp formats are supported.'
-    ),
-});
-
+// We are replacing Zod validation for the upload with manual checks to debug a persistent issue.
 export async function extractReceiptDataAction(prevState: any, formData: FormData) {
-  const validatedFields = uploadSchema.safeParse({
-    photo: formData.get('photo'),
-  });
+  const photo = formData.get('photo');
 
-  if (!validatedFields.success) {
+  // Manual validation
+  if (!photo || !(photo instanceof File) || photo.size === 0) {
     return {
-      message: 'Invalid form data. Please check the fields.',
-      errors: validatedFields.error.flatten().fieldErrors,
+      message: 'A receipt image is required.',
+      errors: { photo: ['A receipt image is required.'] },
       data: null,
     };
   }
 
-  const { photo } = validatedFields.data;
+  if (photo.size > 10 * 1024 * 1024) {
+    return {
+      message: 'File size must be less than 10MB.',
+      errors: { photo: ['File size must be less than 10MB.'] },
+      data: null,
+    };
+  }
+
+  const allowedTypes = ['image/jpeg', 'image/png', 'image/gif', 'image/webp'];
+  if (!allowedTypes.includes(photo.type)) {
+    return {
+      message: 'Only .jpg, .png, .gif, and .webp formats are supported.',
+      errors: { photo: ['Only .jpg, .png, .gif, and .webp formats are supported.'] },
+      data: null,
+    };
+  }
 
   try {
     const fileBuffer = await photo.arrayBuffer();
     const photoDataUri = `data:${photo.type};base64,${Buffer.from(fileBuffer).toString('base64')}`;
 
-    // The AI flow handles undefined optional fields correctly.
     const extractedData = await extractReceiptDataFlow({
       photoDataUri,
     });
-    
+
     return { message: 'Data extracted. Please review.', data: extractedData, errors: null };
   } catch (error) {
     console.error(error);
-    return { message: 'An error occurred while processing the receipt.', data: null, errors: { _form: ['AI processing failed. Please try again or enter details manually.'] } };
+    return {
+      message: 'An error occurred while processing the receipt.',
+      data: null,
+      errors: { _form: ['AI processing failed. Please try again or enter details manually.'] },
+    };
   }
 }
 
@@ -57,22 +64,21 @@ const saveSchema = z.object({
 });
 
 export async function saveReceiptAction(data: z.infer<typeof saveSchema>) {
-    const validated = saveSchema.safeParse(data);
+  const validated = saveSchema.safeParse(data);
 
-    if (!validated.success) {
-        return { success: false, message: 'Invalid data provided for saving.' };
-    }
+  if (!validated.success) {
+    return { success: false, message: 'Invalid data provided for saving.' };
+  }
 
-    // In a real app, you would save this to a database.
-    // For now, we just log it and revalidate to simulate the data being added.
-    console.log("Saving receipt:", validated.data);
+  // In a real app, you would save this to a database.
+  // For now, we just log it and revalidate to simulate the data being added.
+  console.log('Saving receipt:', validated.data);
 
-    revalidatePath('/receipts');
-    revalidatePath('/dashboard');
+  revalidatePath('/receipts');
+  revalidatePath('/dashboard');
 
-    return { success: true, message: 'Receipt saved successfully!' };
+  return { success: true, message: 'Receipt saved successfully!' };
 }
-
 
 export async function generateSpendingInsightsAction() {
   try {
