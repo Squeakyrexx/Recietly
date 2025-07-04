@@ -6,7 +6,7 @@ import { mockReceipts } from '@/lib/mock-data';
 import { revalidatePath } from 'next/cache';
 import { z } from 'zod';
 
-const receiptSchema = z.object({
+const uploadSchema = z.object({
   photo: z
     .instanceof(File, { message: 'A receipt image is required.' })
     .refine((file) => file.size > 0, 'A receipt image is required.')
@@ -15,39 +15,12 @@ const receiptSchema = z.object({
       (file) => ['image/jpeg', 'image/png', 'image/gif', 'image/webp'].includes(file.type),
       'Only .jpg, .png, .gif, and .webp formats are supported.'
     ),
-  merchant: z.preprocess(
-    (val) => (val === '' || val === null ? undefined : val),
-    z.string().optional()
-  ),
-  amount: z.preprocess(
-    (val) => (val === '' || val === null ? undefined : val),
-    z.coerce.number().optional()
-  ),
-  date: z.preprocess(
-    (val) => (val === '' || val === null ? undefined : val),
-    z.string().optional()
-  ),
-  category: z.preprocess(
-    (val) => (val === '' || val === null ? undefined : val),
-    z.string().optional()
-  ),
-  description: z.preprocess(
-    (val) => (val === '' || val === null ? undefined : val),
-    z.string().optional()
-  ),
 });
 
 export async function extractReceiptDataAction(prevState: any, formData: FormData) {
-  const rawData = {
+  const validatedFields = uploadSchema.safeParse({
     photo: formData.get('photo'),
-    merchant: formData.get('merchant'),
-    amount: formData.get('amount'),
-    date: formData.get('date'),
-    category: formData.get('category'),
-    description: formData.get('description'),
-  };
-
-  const validatedFields = receiptSchema.safeParse(rawData);
+  });
 
   if (!validatedFields.success) {
     return {
@@ -57,19 +30,15 @@ export async function extractReceiptDataAction(prevState: any, formData: FormDat
     };
   }
 
-  const { photo, ...userFields } = validatedFields.data;
+  const { photo } = validatedFields.data;
 
   try {
     const fileBuffer = await photo.arrayBuffer();
     const photoDataUri = `data:${photo.type};base64,${Buffer.from(fileBuffer).toString('base64')}`;
 
+    // The AI flow handles undefined optional fields correctly.
     const extractedData = await extractReceiptDataFlow({
       photoDataUri,
-      userMerchant: userFields.merchant,
-      userAmount: userFields.amount,
-      userDate: userFields.date,
-      userCategory: userFields.category,
-      userDescription: userFields.description,
     });
     
     return { message: 'Data extracted. Please review.', data: extractedData, errors: null };
