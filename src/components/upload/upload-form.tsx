@@ -9,10 +9,11 @@ import { Label } from '@/components/ui/label';
 import { Button } from '@/components/ui/button';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Textarea } from '@/components/ui/textarea';
-import { Loader2, UploadCloud, File, X, CheckCircle2 } from 'lucide-react';
+import { Loader2, UploadCloud, X, CheckCircle2, ChevronDown } from 'lucide-react';
 import { Card, CardContent } from '@/components/ui/card';
 import { type ExtractedReceiptData } from '@/lib/types';
 import Image from 'next/image';
+import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
 
 const initialState = {
   message: '',
@@ -42,6 +43,7 @@ export function UploadForm() {
   const formRef = useRef<HTMLFormElement>(null);
   const [file, setFile] = useState<File | null>(null);
   const [previewUrl, setPreviewUrl] = useState<string | null>(null);
+  const [showManualEntry, setShowManualEntry] = useState(false);
 
   useEffect(() => {
     if (state.message && state.data) {
@@ -52,6 +54,7 @@ export function UploadForm() {
       formRef.current?.reset();
       setFile(null);
       setPreviewUrl(null);
+      setShowManualEntry(false);
     } else if (state.message && !state.data) {
        toast({
         title: 'Error',
@@ -99,7 +102,7 @@ export function UploadForm() {
                   className="relative cursor-pointer rounded-md font-semibold text-primary focus-within:outline-none focus-within:ring-2 focus-within:ring-ring focus-within:ring-offset-2 hover:text-primary/80"
                 >
                   <span>Upload a file</span>
-                  <Input id="photo" name="photo" type="file" className="sr-only" accept="image/*" capture="environment" onChange={handleFileChange} required />
+                  <Input id="photo" name="photo" type="file" className="sr-only" accept="image/*" capture="environment" onChange={handleFileChange} />
                 </Label>
                 <p className="pl-1">or drag and drop</p>
               </div>
@@ -107,45 +110,55 @@ export function UploadForm() {
             </div>
           )}
         </div>
-        {state.errors?.photo && <p className="text-sm text-destructive mt-1">{state.errors.photo}</p>}
+        {state.errors?.photo && <p className="text-sm text-destructive mt-1">{state.errors.photo[0]}</p>}
       </div>
 
-      <p className="text-sm text-center text-muted-foreground">Or override with manual entry:</p>
-      
-      <div className="grid grid-cols-1 gap-6 sm:grid-cols-2">
-        <div className="space-y-2">
-          <Label htmlFor="merchant">Merchant</Label>
-          <Input id="merchant" name="merchant" placeholder="e.g., FreshMart" />
+      <Collapsible open={showManualEntry} onOpenChange={setShowManualEntry}>
+        <div className="flex justify-center">
+          <CollapsibleTrigger asChild>
+            <Button variant="ghost" className="text-sm font-medium">
+              Enter details manually
+              <ChevronDown className="ml-1 h-4 w-4 transition-transform duration-200 data-[state=open]:rotate-180" />
+            </Button>
+          </CollapsibleTrigger>
         </div>
-        <div className="space-y-2">
-          <Label htmlFor="amount">Amount</Label>
-          <Input id="amount" name="amount" type="number" step="0.01" placeholder="e.g., 75.42" />
-        </div>
-        <div className="space-y-2">
-          <Label htmlFor="date">Date</Label>
-          <Input id="date" name="date" type="date" />
-        </div>
-        <div className="space-y-2">
-          <Label htmlFor="category">Category</Label>
-          <Select name="category">
-            <SelectTrigger>
-              <SelectValue placeholder="Select a category" />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="Groceries">Groceries</SelectItem>
-              <SelectItem value="Transport">Transport</SelectItem>
-              <SelectItem value="Dining">Dining</SelectItem>
-              <SelectItem value="Entertainment">Entertainment</SelectItem>
-              <SelectItem value="Utilities">Utilities</SelectItem>
-              <SelectItem value="Other">Other</SelectItem>
-            </SelectContent>
-          </Select>
-        </div>
-        <div className="sm:col-span-2 space-y-2">
-          <Label htmlFor="description">Description</Label>
-          <Textarea id="description" name="description" placeholder="e.g., Weekly groceries" />
-        </div>
-      </div>
+        <CollapsibleContent className="space-y-6 pt-4 overflow-hidden data-[state=closed]:animate-accordion-up data-[state=open]:animate-accordion-down">
+          <div className="grid grid-cols-1 gap-6 sm:grid-cols-2">
+            <div className="space-y-2">
+              <Label htmlFor="merchant">Merchant</Label>
+              <Input id="merchant" name="merchant" placeholder="e.g., FreshMart" />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="amount">Amount</Label>
+              <Input id="amount" name="amount" type="number" step="0.01" placeholder="e.g., 75.42" />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="date">Date</Label>
+              <Input id="date" name="date" type="date" />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="category">Category</Label>
+              <Select name="category">
+                <SelectTrigger>
+                  <SelectValue placeholder="Select a category" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="Groceries">Groceries</SelectItem>
+                  <SelectItem value="Transport">Transport</SelectItem>
+                  <SelectItem value="Dining">Dining</SelectItem>
+                  <SelectItem value="Entertainment">Entertainment</SelectItem>
+                  <SelectItem value="Utilities">Utilities</SelectItem>
+                  <SelectItem value="Other">Other</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+            <div className="sm:col-span-2 space-y-2">
+              <Label htmlFor="description">Description</Label>
+              <Textarea id="description" name="description" placeholder="e.g., Weekly groceries" />
+            </div>
+          </div>
+        </CollapsibleContent>
+      </Collapsible>
 
       <SubmitButton />
 

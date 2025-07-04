@@ -7,7 +7,9 @@ import { revalidatePath } from 'next/cache';
 import { z } from 'zod';
 
 const receiptSchema = z.object({
-  photo: z.any(),
+  photo: z.any().refine((file) => file && file.size > 0, {
+    message: 'A receipt image is required.',
+  }),
   merchant: z.string().optional(),
   amount: z.coerce.number().optional(),
   date: z.string().optional(),
@@ -20,17 +22,13 @@ export async function extractReceiptDataAction(prevState: any, formData: FormDat
 
   if (!validatedFields.success) {
     return {
-      message: 'Invalid form data.',
+      message: 'Invalid form data. Please check the fields.',
       errors: validatedFields.error.flatten().fieldErrors,
       data: null,
     };
   }
 
   const { photo, ...userFields } = validatedFields.data;
-
-  if (!photo || photo.size === 0) {
-    return { message: 'A receipt image is required.', data: null };
-  }
 
   try {
     const fileBuffer = await photo.arrayBuffer();
