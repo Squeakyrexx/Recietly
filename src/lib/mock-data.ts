@@ -59,7 +59,6 @@ const getMonthDateRange = () => {
 export const getSpendingByCategory = ({ month }: { month: 'current' | 'all' }): SpendingByCategory[] => {
   const spendingMap: { [key: string]: number } = {};
   
-  // We call getReceipts() here which is now also dynamic
   let receiptsToProcess = getReceipts();
   
   if (month === 'current') {
@@ -88,7 +87,6 @@ export const getSpendingByCategory = ({ month }: { month: 'current' | 'all' }): 
 };
 
 export const getTotalSpending = ({ month }: { month: 'current' | 'all' }): number => {
-    // We call getReceipts() here which is now also dynamic
     let receiptsToProcess = getReceipts();
     if (month === 'current') {
         const { startOfMonth, endOfMonth } = getMonthDateRange();

@@ -2,10 +2,10 @@ import { getReceipts } from '@/lib/mock-data';
 import { Button } from '@/components/ui/button';
 import Link from 'next/link';
 import { ReceiptsList } from '@/components/receipts/receipts-list';
-import { noStore } from 'next/cache';
+
+export const dynamic = 'force-dynamic';
 
 export default function ReceiptsPage() {
-  noStore();
   // In a real app, this data would be fetched for the logged-in user
   const receipts = getReceipts();
 
