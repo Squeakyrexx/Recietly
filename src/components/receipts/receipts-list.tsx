@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { type Receipt } from '@/lib/types';
 import { ReceiptCard } from './receipt-card';
 import { ReceiptDetailsDialog } from './receipt-details-dialog';
@@ -10,6 +10,10 @@ import { Button } from '../ui/button';
 export function ReceiptsList({ initialReceipts }: { initialReceipts: Receipt[] }) {
   const [receipts, setReceipts] = useState<Receipt[]>(initialReceipts);
   const [selectedReceipt, setSelectedReceipt] = useState<Receipt | null>(null);
+
+  useEffect(() => {
+    setReceipts(initialReceipts);
+  }, [initialReceipts]);
 
   const handleReceiptUpdate = (updatedReceipt: Receipt) => {
     setReceipts(receipts.map(r => r.id === updatedReceipt.id ? updatedReceipt : r));

@@ -8,9 +8,9 @@ import { FileImage } from 'lucide-react';
 
 export function ReceiptCard({ receipt }: { receipt: Receipt }) {
   const Icon = getIconForCategory(receipt.category);
-  // Add a timezone offset to prevent date-fns from showing the previous day
-  const timeZoneOffset = new Date().getTimezoneOffset() * 60000;
-  const formattedDate = format(new Date(receipt.date).getTime() + timeZoneOffset, 'MMM d, yyyy');
+  // By replacing hyphens with slashes, we parse the date in the local timezone,
+  // which avoids "off-by-one-day" errors across different timezones.
+  const formattedDate = format(new Date(receipt.date.replace(/-/g, '/')), 'MMM d, yyyy');
 
 
   return (

@@ -45,6 +45,9 @@ export const addReceipt = (receipt: Omit<Receipt, 'id'>) => {
         date: isValidDate ? receipt.date : new Date().toISOString().split('T')[0],
     };
     receipts.unshift(newReceipt); // Add to the beginning of the array
+    if (process.env.NODE_ENV !== 'production') {
+        globalForReceipts.receipts = receipts;
+    }
 };
 
 export const updateReceipt = (updatedReceipt: Receipt) => {
@@ -75,7 +78,7 @@ export const getSpendingByCategory = ({ month }: { month: 'current' | 'all' }): 
     receiptsToProcess = receiptsToProcess.filter(r => {
         // By replacing hyphens with slashes, we parse the date in the local timezone,
         // which avoids "off-by-one-day" errors across different timezones.
-        const receiptDate = new Date(r.date.replace(/-/g, '\/'));
+        const receiptDate = new Date(r.date.replace(/-/g, '/'));
         return receiptDate >= startOfMonth && receiptDate <= endOfMonth;
     });
   }
@@ -105,7 +108,7 @@ export const getTotalSpending = ({ month }: { month: 'current' | 'all' }): numbe
         receiptsToProcess = receiptsToProcess.filter(r => {
             // By replacing hyphens with slashes, we parse the date in the local timezone,
             // which avoids "off-by-one-day" errors across different timezones.
-            const receiptDate = new Date(r.date.replace(/-/g, '\/'));
+            const receiptDate = new Date(r.date.replace(/-/g, '/'));
             return receiptDate >= startOfMonth && receiptDate <= endOfMonth;
         });
     }
