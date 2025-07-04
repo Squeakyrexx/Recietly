@@ -15,8 +15,13 @@ export type Receipt = {
 };
 
 export type SpendingByCategory = {
-  category: string;
+  category: Category;
   total: number;
 };
 
 export type ExtractedReceiptData = z.infer<typeof extractReceiptData.outputSchema>;
+
+export type Budget = {
+    category: Category;
+    amount: number;
+}

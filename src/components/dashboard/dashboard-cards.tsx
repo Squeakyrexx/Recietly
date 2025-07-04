@@ -14,7 +14,6 @@ export function TotalSpendingCard({ total }: { total: number }) {
         <div className="text-4xl font-bold">
           ${total.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
         </div>
-        <p className="text-xs text-muted-foreground">+5.2% from last month</p>
       </CardContent>
     </Card>
   );
@@ -30,7 +29,8 @@ export function TopSpendingCard({ data }: { data: SpendingByCategory[] }) {
                 <CardDescription>Your biggest spending areas this month.</CardDescription>
             </CardHeader>
             <CardContent>
-                <ul className="space-y-4">
+               {topCategories.length > 0 ? (
+                 <ul className="space-y-4">
                     {topCategories.map(item => {
                        const Icon = getIconForCategory(item.category);
                        return (
@@ -46,6 +46,11 @@ export function TopSpendingCard({ data }: { data: SpendingByCategory[] }) {
                        )
                     })}
                 </ul>
+               ) : (
+                <div className="text-center text-muted-foreground py-4">
+                    No spending recorded this month.
+                </div>
+               )}
             </CardContent>
         </Card>
     );

@@ -14,6 +14,12 @@ export function ReceiptsList({ initialReceipts }: { initialReceipts: Receipt[] }
   const handleReceiptUpdate = (updatedReceipt: Receipt) => {
     setReceipts(receipts.map(r => r.id === updatedReceipt.id ? updatedReceipt : r));
   };
+  
+  const handleReceiptDelete = (deletedReceiptId: string) => {
+    setReceipts(receipts.filter(r => r.id !== deletedReceiptId));
+    setSelectedReceipt(null);
+  };
+
 
   return (
     <>
@@ -26,6 +32,7 @@ export function ReceiptsList({ initialReceipts }: { initialReceipts: Receipt[] }
         }}
         receipt={selectedReceipt}
         onReceiptUpdate={handleReceiptUpdate}
+        onReceiptDelete={handleReceiptDelete}
       />
       {receipts.length > 0 ? (
         <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4">

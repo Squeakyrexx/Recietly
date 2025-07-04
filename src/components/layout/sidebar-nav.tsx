@@ -21,11 +21,13 @@ import {
   Upload,
   Settings,
   Gem,
+  PiggyBank,
 } from 'lucide-react';
 
 const navItems = [
   { href: '/dashboard', icon: LayoutDashboard, label: 'Dashboard' },
   { href: '/receipts', icon: Receipt, label: 'Receipts' },
+  { href: '/budgets', icon: PiggyBank, label: 'Budgets' },
   { href: '/upload', icon: Upload, label: 'Upload' },
   { href: '/settings', icon: Settings, label: 'Settings' },
 ];
@@ -49,7 +51,7 @@ export function SidebarNav() {
           {navItems.map((item) => (
             <SidebarMenuItem key={item.href}>
               <Link href={item.href}>
-                <SidebarMenuButton isActive={pathname === item.href}>
+                <SidebarMenuButton isActive={pathname.startsWith(item.href)}>
                   <item.icon />
                   <span>{item.label}</span>
                 </SidebarMenuButton>

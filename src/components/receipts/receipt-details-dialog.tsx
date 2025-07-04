@@ -12,13 +12,24 @@ import {
   DialogFooter,
   DialogClose,
 } from '@/components/ui/dialog';
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from '@/components/ui/alert-dialog';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Textarea } from '@/components/ui/textarea';
 import { type Receipt, CATEGORIES } from '@/lib/types';
-import { Loader2, Save } from 'lucide-react';
-import { updateReceiptAction } from '@/lib/actions';
+import { Loader2, Save, Trash2 } from 'lucide-react';
+import { updateReceiptAction, deleteReceiptAction } from '@/lib/actions';
 import { useToast } from '@/hooks/use-toast';
 
 interface ReceiptDetailsDialogProps {
@@ -26,6 +37,7 @@ interface ReceiptDetailsDialogProps {
   onOpenChange: (open: boolean) => void;
   receipt: Receipt | null;
   onReceiptUpdate: (updatedReceipt: Receipt) => void;
+  onReceiptDelete: (deletedReceiptId: string) => void;
 }
 
 export function ReceiptDetailsDialog({
@@ -33,8 +45,10 @@ export function ReceiptDetailsDialog({
   onOpenChange,
   receipt,
   onReceiptUpdate,
+  onReceiptDelete,
 }: ReceiptDetailsDialogProps) {
   const [isSaving, startSavingTransition] = useTransition();
+  const [isDeleting, startDeletingTransition] = useTransition();
   const { toast } = useToast();
   const [editedReceipt, setEditedReceipt] = useState<Receipt | null>(receipt);
 
@@ -69,6 +83,28 @@ export function ReceiptDetailsDialog({
       }
     });
   }
+
+  const handleDelete = () => {
+    if (!editedReceipt) return;
+    
+    startDeletingTransition(async () => {
+      const result = await deleteReceiptAction(editedReceipt.id);
+      if (result.success) {
+        toast({
+          title: 'Receipt Deleted',
+        });
+        onReceiptDelete(editedReceipt.id);
+        onOpenChange(false);
+      } else {
+        toast({
+          title: 'Error Deleting',
+          description: result.message,
+          variant: 'destructive',
+        });
+      }
+    });
+  }
+
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
@@ -145,17 +181,44 @@ export function ReceiptDetailsDialog({
             </div>
           </div>
         </div>
-        <DialogFooter>
-          <DialogClose asChild>
-            <Button variant="outline">Cancel</Button>
-          </DialogClose>
-          <Button onClick={handleSave} disabled={isSaving}>
-            {isSaving ? (
-              <><Loader2 className="mr-2 h-4 w-4 animate-spin" /> Saving Changes...</>
-            ) : (
-              <><Save className="mr-2" /> Save Changes</>
-            )}
-          </Button>
+        <DialogFooter className='sm:justify-between'>
+          <AlertDialog>
+            <AlertDialogTrigger asChild>
+                <Button variant="destructive" className='mr-auto' disabled={isDeleting}>
+                    <Trash2 className="mr-2" /> Delete
+                </Button>
+            </AlertDialogTrigger>
+            <AlertDialogContent>
+                <AlertDialogHeader>
+                    <AlertDialogTitle>Are you sure?</AlertDialogTitle>
+                    <AlertDialogDescription>
+                        This action cannot be undone. This will permanently delete this receipt from your records.
+                    </AlertDialogDescription>
+                </AlertDialogHeader>
+                <AlertDialogFooter>
+                    <AlertDialogCancel>Cancel</AlertDialogCancel>
+                    <AlertDialogAction onClick={handleDelete} disabled={isDeleting}>
+                        {isDeleting ? (
+                            <><Loader2 className="mr-2 h-4 w-4 animate-spin" /> Deleting...</>
+                        ) : (
+                            'Yes, delete it'
+                        )}
+                    </AlertDialogAction>
+                </AlertDialogFooter>
+            </AlertDialogContent>
+          </AlertDialog>
+          <div className='flex gap-2'>
+            <DialogClose asChild>
+                <Button variant="outline">Cancel</Button>
+            </DialogClose>
+            <Button onClick={handleSave} disabled={isSaving}>
+                {isSaving ? (
+                <><Loader2 className="mr-2 h-4 w-4 animate-spin" /> Saving Changes...</>
+                ) : (
+                <><Save className="mr-2" /> Save Changes</>
+                )}
+            </Button>
+          </div>
         </DialogFooter>
       </DialogContent>
     </Dialog>

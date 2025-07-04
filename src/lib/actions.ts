@@ -2,12 +2,29 @@
 
 import { extractReceiptData as extractReceiptDataFlow } from '@/ai/flows/extract-receipt-data';
 import { generateSpendingInsights as generateSpendingInsightsFlow } from '@/ai/flows/generate-spending-insights';
-import { addReceipt, getReceipts, updateReceipt } from '@/lib/mock-data';
+import { addReceipt, getReceipts, updateReceipt, deleteReceipt, setBudget } from '@/lib/mock-data';
 import { revalidatePath } from 'next/cache';
 import { z } from 'zod';
-import { type ExtractedReceiptData, CATEGORIES, type Receipt } from './types';
+import { type ExtractedReceiptData, CATEGORIES, type Receipt, type Category } from './types';
 
 export async function extractReceiptDataAction({photoDataUri}: {photoDataUri: string}) {
+  if (!photoDataUri) {
+    return {
+      message: 'A receipt image is required. Please select a file.',
+      data: null,
+      error: 'File not provided.',
+    }
+  }
+
+  // Basic validation for data URI
+  if (!photoDataUri.startsWith('data:image/')) {
+    return {
+      message: 'Invalid file type. Please upload an image.',
+      data: null,
+      error: 'Invalid file type.',
+    }
+  }
+
   try {
     const extractedData = await extractReceiptDataFlow({
       photoDataUri,
@@ -88,6 +105,16 @@ export async function updateReceiptAction(receiptData: Receipt) {
   return { success: true, message: 'Receipt updated successfully!' };
 }
 
+export async function deleteReceiptAction(id: string) {
+    if (!id) {
+        return { success: false, message: 'No ID provided for deletion.' };
+    }
+    deleteReceipt(id);
+    revalidatePath('/receipts');
+    revalidatePath('/dashboard');
+    return { success: true, message: 'Receipt deleted.' };
+}
+
 
 export async function generateSpendingInsightsAction() {
   try {
@@ -98,4 +125,25 @@ export async function generateSpendingInsightsAction() {
     console.error(error);
     return { insight: null, error: 'Failed to generate insights. Please try again.' };
   }
+}
+
+const budgetSchema = z.object({
+    category: z.enum(CATEGORIES),
+    amount: z.coerce.number().min(0, 'Budget amount cannot be negative.')
+});
+
+export async function setBudgetAction({ category, amount }: { category: Category, amount: number }) {
+    const validated = budgetSchema.safeParse({ category, amount });
+
+    if (!validated.success) {
+        const errorMessages = validated.error.errors.map(e => e.message).join(', ');
+        return { success: false, message: `Invalid data: ${errorMessages}` };
+    }
+
+    setBudget(validated.data);
+    
+    revalidatePath('/budgets');
+    revalidatePath('/dashboard');
+    
+    return { success: true, message: 'Budget updated!' };
 }

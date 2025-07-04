@@ -1,4 +1,4 @@
-import { type Receipt, type SpendingByCategory, type Category } from '@/lib/types';
+import { type Receipt, type SpendingByCategory, type Category, CATEGORIES } from '@/lib/types';
 
 /**
  * In-memory store for receipts.
@@ -10,12 +10,19 @@ import { type Receipt, type SpendingByCategory, type Category } from '@/lib/type
 const globalForReceipts = global as unknown as {
     receipts: Receipt[] | undefined
 }
+const globalForBudgets = global as unknown as {
+    budgets: { [key in Category]?: number } | undefined
+}
 
 // Initialize receipts only once. Start with an empty array.
-const receipts: Receipt[] = globalForReceipts.receipts ?? [];
+let receipts: Receipt[] = globalForReceipts.receipts ?? [];
+let budgets: { [key in Category]?: number } = globalForBudgets.budgets ?? 
+    CATEGORIES.reduce((acc, cat) => ({...acc, [cat]: 0}), {});
+
 
 if (process.env.NODE_ENV !== 'production') {
     globalForReceipts.receipts = receipts;
+    globalForBudgets.budgets = budgets;
 }
 
 
@@ -48,11 +55,32 @@ export const updateReceipt = (updatedReceipt: Receipt) => {
     if (index !== -1) {
         receipts[index] = updatedReceipt;
     }
+};
+
+export const deleteReceipt = (id: string) => {
+    receipts = receipts.filter(r => r.id !== id);
+    if (process.env.NODE_ENV !== 'production') {
+        globalForReceipts.receipts = receipts;
+    }
 }
 
-export const getSpendingByCategory = (): SpendingByCategory[] => {
+export const getSpendingByCategory = ({ month }: { month: 'current' | 'all' }): SpendingByCategory[] => {
   const spendingMap: { [key: string]: number } = {};
-  getReceipts().forEach((receipt) => {
+  
+  let receiptsToProcess = getReceipts();
+  
+  if (month === 'current') {
+    const now = new Date();
+    const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1);
+    const endOfMonth = new Date(now.getFullYear(), now.getMonth() + 1, 0);
+    
+    receiptsToProcess = receiptsToProcess.filter(r => {
+        const receiptDate = new Date(r.date);
+        return receiptDate >= startOfMonth && receiptDate <= endOfMonth;
+    });
+  }
+  
+  receiptsToProcess.forEach((receipt) => {
     if (spendingMap[receipt.category]) {
       spendingMap[receipt.category] += receipt.amount;
     } else {
@@ -66,6 +94,28 @@ export const getSpendingByCategory = (): SpendingByCategory[] => {
   }));
 };
 
-export const getTotalSpending = (): number => {
-  return getReceipts().reduce((total, receipt) => total + receipt.amount, 0);
+export const getTotalSpending = ({ month }: { month: 'current' | 'all' }): number => {
+    let receiptsToProcess = getReceipts();
+    if (month === 'current') {
+        const now = new Date();
+        const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1);
+        const endOfMonth = new Date(now.getFullYear(), now.getMonth() + 1, 0);
+
+        receiptsToProcess = receiptsToProcess.filter(r => {
+            const receiptDate = new Date(r.date);
+            return receiptDate >= startOfMonth && receiptDate <= endOfMonth;
+        });
+    }
+  return receiptsToProcess.reduce((total, receipt) => total + receipt.amount, 0);
 };
+
+export const getBudgets = (): { [key in Category]?: number } => {
+    return budgets;
+}
+
+export const setBudget = ({ category, amount }: { category: Category, amount: number }) => {
+    budgets[category] = amount;
+     if (process.env.NODE_ENV !== 'production') {
+        globalForBudgets.budgets = budgets;
+    }
+}
