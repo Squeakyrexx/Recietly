@@ -1,8 +1,8 @@
 import { Button } from '@/components/ui/button';
 import { Logo } from '@/components/icons';
 import Link from 'next/link';
-import Image from 'next/image';
 import { ArrowRight, CheckCircle, CloudUpload, Bot, BarChart } from 'lucide-react';
+import { DashboardPreview } from '@/components/landing/dashboard-preview';
 
 export default function LandingPage() {
   return (
@@ -26,7 +26,7 @@ export default function LandingPage() {
       
       <main className="flex-1">
         {/* Hero Section */}
-        <section className="py-24 sm:py-32">
+        <section className="w-full py-24 sm:py-32">
           <div className="container flex flex-col items-center text-center">
             <div className="max-w-4xl space-y-6">
               <h1 className="font-headline text-4xl font-bold tracking-tight text-primary sm:text-5xl md:text-6xl">
@@ -45,8 +45,8 @@ export default function LandingPage() {
         </section>
 
         {/* Visual Feature Callout */}
-        <section className="py-24 sm:py-32 bg-card border-y">
-            <div className="container grid grid-cols-1 md:grid-cols-2 gap-16 items-center">
+        <section className="w-full py-24 sm:py-32 bg-card border-y">
+            <div className="container grid grid-cols-1 md:grid-cols-2 gap-12 items-center">
                 <div className="space-y-6">
                     <h2 className="text-3xl font-bold tracking-tight">Your Finances, Finally Organized.</h2>
                     <p className="text-lg text-muted-foreground">
@@ -59,14 +59,14 @@ export default function LandingPage() {
                         <li className="flex items-center gap-3"><CheckCircle className="h-5 w-5 text-primary" /> Tax-ready reporting for business expenses.</li>
                     </ul>
                 </div>
-                <div className="relative aspect-video rounded-lg shadow-2xl bg-muted p-2 ring-1 ring-inset ring-primary/10">
-                    <Image src="https://placehold.co/600x400.png" data-ai-hint="app dashboard" alt="A screenshot of the Recietly application dashboard showing charts and spending summaries." fill className="object-cover rounded-md" />
+                <div className="relative aspect-[4/3] rounded-lg bg-muted p-2 ring-1 ring-inset ring-primary/10">
+                    <DashboardPreview />
                 </div>
             </div>
         </section>
 
         {/* Feature Sections */}
-        <section className="py-24 sm:py-32">
+        <section className="w-full py-24 sm:py-32">
           <div className="container flex flex-col items-center">
             <div className="max-w-2xl text-center mb-16">
               <h2 className="text-3xl font-bold tracking-tight">How It Works</h2>
@@ -100,7 +100,7 @@ export default function LandingPage() {
 
       </main>
 
-      <footer className="border-t bg-card">
+      <footer className="w-full border-t bg-card">
         <div className="container py-8 text-center text-sm text-muted-foreground">
           &copy; {new Date().getFullYear()} Recietly. All rights reserved.
         </div>
