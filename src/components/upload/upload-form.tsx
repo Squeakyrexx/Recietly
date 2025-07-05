@@ -7,7 +7,7 @@ import { useToast } from '@/hooks/use-toast';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { Camera, Loader2, RefreshCw, Sparkles, Upload } from 'lucide-react';
-import { type ExtractedReceiptData, CATEGORIES } from '@/lib/types';
+import { type ExtractedReceiptData, CATEGORIES, TaxCategory } from '@/lib/types';
 import Image from 'next/image';
 import { ConfirmationDialog } from './confirmation-dialog';
 import { useRouter } from 'next/navigation';
@@ -16,7 +16,7 @@ import { z } from 'zod';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { Card } from '@/components/ui/card';
 
-type EditableReceiptData = ExtractedReceiptData & { isBusinessExpense?: boolean };
+type EditableReceiptData = ExtractedReceiptData & { isBusinessExpense?: boolean; taxCategory?: TaxCategory };
 
 const receiptDataSchema = z.object({
   merchant: z.string().min(1, 'Merchant is required.'),
@@ -25,6 +25,7 @@ const receiptDataSchema = z.object({
   category: z.enum(CATEGORIES),
   description: z.string().optional(),
   isBusinessExpense: z.boolean().optional(),
+  taxCategory: z.enum(TAX_CATEGORIES).optional(),
 });
 
 
@@ -126,7 +127,7 @@ export function UploadForm({ user }: { user: User }) {
       const result = await extractReceiptDataAction({ photoDataUri });
 
       if (result.data) {
-        setReceiptData({ ...result.data, isBusinessExpense: false });
+        setReceiptData({ ...result.data });
         setIsConfirming(true);
         toast({
           title: 'Data Extracted',

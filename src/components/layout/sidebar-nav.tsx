@@ -25,6 +25,7 @@ import {
   Gem,
   PiggyBank,
   LogOut,
+  Landmark,
 } from 'lucide-react';
 import type { User } from 'firebase/auth';
 
@@ -32,6 +33,7 @@ const navItems = [
   { href: '/dashboard', icon: LayoutDashboard, label: 'Dashboard' },
   { href: '/receipts', icon: Receipt, label: 'Receipts' },
   { href: '/budgets', icon: PiggyBank, label: 'Budgets' },
+  { href: '/tax-report', icon: Landmark, label: 'Tax Report' },
   { href: '/upload', icon: Upload, label: 'Upload' },
   { href: '/settings', icon: Settings, label: 'Settings' },
 ];

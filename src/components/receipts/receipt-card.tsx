@@ -48,9 +48,10 @@ export function ReceiptCard({ receipt }: { receipt: Receipt }) {
                 <span>{receipt.category}</span>
             </div>
             {receipt.isBusinessExpense && (
-                <div className="flex items-center gap-1 text-accent font-semibold">
+                <Badge variant="outline" className="flex items-center gap-1 border-accent text-accent">
                     <Briefcase className="h-3 w-3" />
-                </div>
+                    <span>{receipt.taxCategory || 'Business'}</span>
+                </Badge>
             )}
         </div>
         <time dateTime={receipt.date}>{formattedDate}</time>

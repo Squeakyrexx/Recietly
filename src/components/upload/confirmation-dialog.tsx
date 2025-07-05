@@ -15,11 +15,11 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Textarea } from '@/components/ui/textarea';
-import { type ExtractedReceiptData, CATEGORIES } from '@/lib/types';
+import { type ExtractedReceiptData, CATEGORIES, TAX_CATEGORIES, type TaxCategory } from '@/lib/types';
 import { Loader2, Save, Briefcase } from 'lucide-react';
 import { Switch } from '@/components/ui/switch';
 
-type EditableReceiptData = ExtractedReceiptData & { isBusinessExpense?: boolean };
+type EditableReceiptData = ExtractedReceiptData & { isBusinessExpense?: boolean; taxCategory?: TaxCategory };
 
 interface ConfirmationDialogProps {
   open: boolean;
@@ -42,8 +42,20 @@ export function ConfirmationDialog({
 }: ConfirmationDialogProps) {
   if (!receiptData) return null;
 
-  const handleFieldChange = (field: keyof EditableReceiptData, value: string | number | boolean) => {
-    setReceiptData({ ...receiptData, [field]: value });
+  const handleFieldChange = (field: keyof EditableReceiptData, value: string | number | boolean | undefined) => {
+    if (receiptData) {
+      setReceiptData({ ...receiptData, [field]: value });
+    }
+  };
+
+  const handleBusinessExpenseToggle = (checked: boolean) => {
+    if (receiptData) {
+      const newData = { ...receiptData, isBusinessExpense: checked };
+      if (!checked) {
+        delete newData.taxCategory;
+      }
+      setReceiptData(newData);
+    }
   };
 
   return (
@@ -132,9 +144,29 @@ export function ConfirmationDialog({
               <Switch
                 id="is-business-expense"
                 checked={!!receiptData.isBusinessExpense}
-                onCheckedChange={(checked) => handleFieldChange('isBusinessExpense', checked)}
+                onCheckedChange={handleBusinessExpenseToggle}
               />
             </div>
+             {receiptData.isBusinessExpense && (
+                <div className="space-y-1.5">
+                    <Label htmlFor="confirm-tax-category">Tax Category</Label>
+                    <Select
+                        value={receiptData.taxCategory}
+                        onValueChange={(value: TaxCategory) => handleFieldChange('taxCategory', value)}
+                    >
+                        <SelectTrigger id="confirm-tax-category">
+                        <SelectValue placeholder="Select a tax category" />
+                        </SelectTrigger>
+                        <SelectContent>
+                        {TAX_CATEGORIES.map((category) => (
+                            <SelectItem key={category} value={category}>
+                            {category}
+                            </SelectItem>
+                        ))}
+                        </SelectContent>
+                    </Select>
+                </div>
+            )}
           </div>
         </div>
         <DialogFooter>

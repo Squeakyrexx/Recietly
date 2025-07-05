@@ -28,7 +28,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Textarea } from '@/components/ui/textarea';
-import { type Receipt, CATEGORIES } from '@/lib/types';
+import { type Receipt, CATEGORIES, TAX_CATEGORIES, TaxCategory } from '@/lib/types';
 import { Loader2, Save, Trash2, Briefcase } from 'lucide-react';
 import { revalidateAllAction } from '@/lib/actions';
 import { updateReceipt, deleteReceipt } from '@/lib/mock-data';
@@ -52,6 +52,7 @@ const receiptSchema = z.object({
   category: z.enum(CATEGORIES),
   description: z.string().optional(),
   isBusinessExpense: z.boolean().optional(),
+  taxCategory: z.enum(TAX_CATEGORIES).optional(),
 });
 
 const updateSchema = z.object({
@@ -78,10 +79,18 @@ export function ReceiptDetailsDialog({
 
   if (!editedReceipt) return null;
 
-  const handleFieldChange = (field: keyof Omit<Receipt, 'id' | 'imageDataUri'>, value: string | number | boolean) => {
-    setEditedReceipt({ ...editedReceipt, [field]: value } as Receipt);
+  const handleFieldChange = (field: keyof Omit<Receipt, 'id' | 'imageDataUri'>, value: any) => {
+    setEditedReceipt((prev) => (prev ? { ...prev, [field]: value } : null));
   };
   
+  const handleBusinessExpenseToggle = (checked: boolean) => {
+    const newReceiptData = { ...editedReceipt, isBusinessExpense: checked };
+    if (!checked) {
+      delete newReceiptData.taxCategory;
+    }
+    setEditedReceipt(newReceiptData);
+  };
+
   const handleSave = () => {
     if (!editedReceipt || !user) return;
     
@@ -102,13 +111,13 @@ export function ReceiptDetailsDialog({
 
     startSavingTransition(async () => {
       try {
-        await updateReceipt(user.uid, receiptToUpdate);
+        await updateReceipt(user.uid, receiptToUpdate as Receipt);
         await revalidateAllAction();
         toast({
           title: 'Success!',
           description: 'Receipt updated successfully!',
         });
-        onReceiptUpdate(receiptToUpdate);
+        onReceiptUpdate(receiptToUpdate as Receipt);
         onOpenChange(false);
       } catch (e) {
         const err = e as Error;
@@ -231,9 +240,29 @@ export function ReceiptDetailsDialog({
               <Switch
                 id="edit-is-business-expense"
                 checked={!!editedReceipt.isBusinessExpense}
-                onCheckedChange={(checked) => handleFieldChange('isBusinessExpense', checked)}
+                onCheckedChange={handleBusinessExpenseToggle}
               />
             </div>
+            {editedReceipt.isBusinessExpense && (
+              <div className="space-y-1.5">
+                <Label htmlFor="edit-tax-category">Tax Category</Label>
+                <Select
+                  value={editedReceipt.taxCategory}
+                  onValueChange={(value) => handleFieldChange('taxCategory', value)}
+                >
+                  <SelectTrigger id="edit-tax-category">
+                    <SelectValue placeholder="Select a tax category" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {TAX_CATEGORIES.map((category) => (
+                      <SelectItem key={category} value={category}>
+                        {category}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+            )}
           </div>
         </div>
         <DialogFooter className='sm:justify-between'>

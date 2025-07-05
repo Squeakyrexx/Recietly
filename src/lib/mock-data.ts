@@ -14,7 +14,7 @@ import {
   onSnapshot,
 } from 'firebase/firestore';
 import { db } from './firebase';
-import { type Receipt, type SpendingByCategory, type Category, CATEGORIES } from '@/lib/types';
+import { type Receipt, type SpendingByCategory, type Category, CATEGORIES, type TaxCategory } from '@/lib/types';
 
 // NOTE: All functions now require a userId to operate on user-specific data.
 
@@ -46,11 +46,16 @@ export const addReceipt = async (userId: string, receipt: Omit<Receipt, 'id'>) =
   const d = new Date(receipt.date.replace(/-/g, '/'));
   const isValidDate = !isNaN(d.getTime());
 
-  const newReceipt: Omit<Receipt, 'id'> = {
+  const newReceipt: Omit<Receipt, 'id' | 'taxCategory'> & { taxCategory?: TaxCategory } = {
     ...receipt,
     date: isValidDate ? receipt.date : new Date().toISOString().split('T')[0],
     isBusinessExpense: receipt.isBusinessExpense || false,
   };
+
+  if (!newReceipt.isBusinessExpense) {
+    delete newReceipt.taxCategory;
+  }
+
   const receiptsCollection = collection(db, 'users', userId, 'receipts');
   await addDoc(receiptsCollection, newReceipt);
 };
@@ -61,7 +66,13 @@ export const updateReceipt = async (userId: string, updatedReceipt: Receipt) => 
   }
   const receiptDoc = doc(db, 'users', userId, 'receipts', updatedReceipt.id);
   const { id, ...data } = updatedReceipt;
-  await updateDoc(receiptDoc, data);
+
+  const dataToUpdate: Omit<Receipt, 'id' | 'taxCategory'> & { taxCategory?: TaxCategory } = { ...data };
+  if (!dataToUpdate.isBusinessExpense) {
+    delete dataToUpdate.taxCategory;
+  }
+
+  await updateDoc(receiptDoc, dataToUpdate);
 };
 
 export const deleteReceipt = async (userId: string, id: string) => {
