@@ -9,18 +9,29 @@ import { ReceiptsList } from '@/components/receipts/receipts-list';
 import { useAuth } from '@/context/auth-context';
 import type { Receipt } from '@/lib/types';
 import { Skeleton } from '@/components/ui/skeleton';
+import { useToast } from '@/hooks/use-toast';
 
 export default function ReceiptsPage() {
   const { user } = useAuth();
+  const { toast } = useToast();
   const [receipts, setReceipts] = useState<Receipt[] | null>(null);
 
   useEffect(() => {
     if (user) {
-      getReceipts(user.uid).then(data => {
-        setReceipts(data);
-      });
+        getReceipts(user.uid)
+          .then(data => {
+            setReceipts(data);
+          })
+          .catch(error => {
+            console.error("Failed to fetch receipts:", error);
+            toast({
+                title: 'Error Loading Receipts',
+                description: 'Could not load your receipts. Please try again later.',
+                variant: 'destructive'
+            });
+          });
     }
-  }, [user]);
+  }, [user, toast]);
 
   return (
     <div className="space-y-6">

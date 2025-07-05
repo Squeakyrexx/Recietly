@@ -8,31 +8,42 @@ import { BudgetForm } from "@/components/budgets/budget-form";
 import { CATEGORIES, type SpendingByCategory, type Category } from "@/lib/types";
 import { useAuth } from '@/context/auth-context';
 import { Skeleton } from '@/components/ui/skeleton';
+import { useToast } from '@/hooks/use-toast';
 
 export default function BudgetsPage() {
   const { user } = useAuth();
+  const { toast } = useToast();
   const [initialBudgets, setInitialBudgets] = useState<{ [key: string]: number } | null>(null);
   const [spendingThisMonth, setSpendingThisMonth] = useState<SpendingByCategory[] | null>(null);
 
   useEffect(() => {
     if (user) {
       const fetchData = async () => {
-        const [budgetsData, spendingData] = await Promise.all([
-          getBudgets(user.uid),
-          getSpendingByCategory(user.uid, { month: 'current' }),
-        ]);
-        
-        const budgetsWithDefaults = CATEGORIES.reduce((acc, category) => {
-          acc[category] = budgetsData[category] || 0;
-          return acc;
-        }, {} as { [key: string]: number });
+        try {
+          const [budgetsData, spendingData] = await Promise.all([
+            getBudgets(user.uid),
+            getSpendingByCategory(user.uid, { month: 'current' }),
+          ]);
+          
+          const budgetsWithDefaults = CATEGORIES.reduce((acc, category) => {
+            acc[category] = budgetsData[category] || 0;
+            return acc;
+          }, {} as { [key: string]: number });
 
-        setInitialBudgets(budgetsWithDefaults);
-        setSpendingThisMonth(spendingData);
+          setInitialBudgets(budgetsWithDefaults);
+          setSpendingThisMonth(spendingData);
+        } catch (error) {
+            console.error("Failed to fetch budget data:", error);
+            toast({
+                title: 'Error Loading Data',
+                description: 'Could not load your budget information. Please try again later.',
+                variant: 'destructive'
+            });
+        }
       };
       fetchData();
     }
-  }, [user]);
+  }, [user, toast]);
 
   const isLoading = !initialBudgets || !spendingThisMonth;
 

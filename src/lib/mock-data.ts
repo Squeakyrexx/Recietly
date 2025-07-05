@@ -22,14 +22,20 @@ export const getReceipts = async (userId: string): Promise<Receipt[]> => {
     console.error("getReceipts called without a userId.");
     return [];
   };
-  const receiptsCollection = collection(db, 'users', userId, 'receipts');
-  const q = query(receiptsCollection, orderBy('date', 'desc'));
-  const querySnapshot = await getDocs(q);
-  const receipts: Receipt[] = [];
-  querySnapshot.forEach((doc) => {
-    receipts.push({ id: doc.id, ...doc.data() } as Receipt);
-  });
-  return receipts;
+  try {
+    const receiptsCollection = collection(db, 'users', userId, 'receipts');
+    const q = query(receiptsCollection, orderBy('date', 'desc'));
+    const querySnapshot = await getDocs(q);
+    const receipts: Receipt[] = [];
+    querySnapshot.forEach((doc) => {
+      receipts.push({ id: doc.id, ...doc.data() } as Receipt);
+    });
+    return receipts;
+  } catch (error) {
+    console.error(`Error fetching receipts for user ${userId}:`, error);
+    // Re-throw the error so the calling component knows something went wrong.
+    throw error;
+  }
 };
 
 export const addReceipt = async (userId: string, receipt: Omit<Receipt, 'id'>) => {
@@ -70,32 +76,37 @@ export const getSpendingByCategory = async (userId: string, { month }: { month: 
     console.error("getSpendingByCategory called without a userId.");
     return [];
   };
-  const spendingMap: { [key: string]: number } = {};
-  
-  let receiptsToProcess = await getReceipts(userId);
-  
-  if (month === 'current') {
-    const now = new Date();
-    const currentYearMonth = now.toISOString().slice(0, 7); // "YYYY-MM"
+  try {
+    const spendingMap: { [key: string]: number } = {};
     
-    receiptsToProcess = receiptsToProcess.filter(r => {
-        if (!r.date || typeof r.date !== 'string') return false;
-        return r.date.startsWith(currentYearMonth);
-    });
-  }
-  
-  receiptsToProcess.forEach((receipt) => {
-    if (spendingMap[receipt.category]) {
-      spendingMap[receipt.category] += receipt.amount;
-    } else {
-      spendingMap[receipt.category] = receipt.amount;
+    let receiptsToProcess = await getReceipts(userId);
+    
+    if (month === 'current') {
+      const now = new Date();
+      const currentYearMonth = now.toISOString().slice(0, 7); // "YYYY-MM"
+      
+      receiptsToProcess = receiptsToProcess.filter(r => {
+          if (!r.date || typeof r.date !== 'string') return false;
+          return r.date.startsWith(currentYearMonth);
+      });
     }
-  });
+    
+    receiptsToProcess.forEach((receipt) => {
+      if (spendingMap[receipt.category]) {
+        spendingMap[receipt.category] += receipt.amount;
+      } else {
+        spendingMap[receipt.category] = receipt.amount;
+      }
+    });
 
-  return Object.entries(spendingMap).map(([category, total]) => ({
-    category: category as Category,
-    total: parseFloat(total.toFixed(2)),
-  }));
+    return Object.entries(spendingMap).map(([category, total]) => ({
+      category: category as Category,
+      total: parseFloat(total.toFixed(2)),
+    }));
+  } catch (error) {
+    console.error(`Error calculating spending by category for user ${userId}:`, error);
+    throw error;
+  }
 };
 
 export const getTotalSpending = async (userId: string, { month }: { month: 'current' | 'all' }): Promise<number> => {
@@ -103,17 +114,22 @@ export const getTotalSpending = async (userId: string, { month }: { month: 'curr
       console.error("getTotalSpending called without a userId.");
       return 0;
     };
-    let receiptsToProcess = await getReceipts(userId);
-    if (month === 'current') {
-        const now = new Date();
-        const currentYearMonth = now.toISOString().slice(0, 7); // "YYYY-MM"
+    try {
+      let receiptsToProcess = await getReceipts(userId);
+      if (month === 'current') {
+          const now = new Date();
+          const currentYearMonth = now.toISOString().slice(0, 7); // "YYYY-MM"
 
-        receiptsToProcess = receiptsToProcess.filter(r => {
-            if (!r.date || typeof r.date !== 'string') return false;
-            return r.date.startsWith(currentYearMonth);
-        });
+          receiptsToProcess = receiptsToProcess.filter(r => {
+              if (!r.date || typeof r.date !== 'string') return false;
+              return r.date.startsWith(currentYearMonth);
+          });
+      }
+      return receiptsToProcess.reduce((total, receipt) => total + receipt.amount, 0);
+    } catch (error) {
+      console.error(`Error calculating total spending for user ${userId}:`, error);
+      throw error;
     }
-  return receiptsToProcess.reduce((total, receipt) => total + receipt.amount, 0);
 };
 
 export const getBudgets = async (userId: string): Promise<{ [key in Category]?: number }> => {
@@ -121,13 +137,18 @@ export const getBudgets = async (userId: string): Promise<{ [key in Category]?: 
       console.error("getBudgets called without a userId.");
       return {};
     };
-    const budgetsDocRef = doc(db, 'users', userId, 'budgets', 'data');
-    const docSnap = await getDoc(budgetsDocRef);
-    if (docSnap.exists()) {
-        return docSnap.data() as { [key in Category]?: number };
-    } else {
-        // Return default budgets if none are set
-        return CATEGORIES.reduce((acc, cat) => ({...acc, [cat]: 0}), {} as { [key in Category]?: number });
+    try {
+        const budgetsDocRef = doc(db, 'users', userId, 'budgets', 'data');
+        const docSnap = await getDoc(budgetsDocRef);
+        if (docSnap.exists()) {
+            return docSnap.data() as { [key in Category]?: number };
+        } else {
+            // Return default budgets if none are set
+            return CATEGORIES.reduce((acc, cat) => ({...acc, [cat]: 0}), {} as { [key in Category]?: number });
+        }
+    } catch (error) {
+        console.error(`Error fetching budgets for user ${userId}:`, error);
+        throw error;
     }
 }
 
