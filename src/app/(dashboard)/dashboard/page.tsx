@@ -41,12 +41,12 @@ export default function DashboardPage() {
       const currentMonth = now.toISOString().slice(0, 7);
       const currentReceipts = receipts.filter(r => r.date?.startsWith(currentMonth));
       
-      const total = currentReceipts.reduce((sum, r) => sum + Number(r.amount || 0), 0);
+      const total = currentReceipts.reduce((sum, r) => sum + (parseFloat(String(r.amount)) || 0), 0);
       setTotalSpending(total);
 
       const spendingMap: { [key: string]: number } = {};
       currentReceipts.forEach((receipt) => {
-          const amount = Number(receipt.amount || 0);
+          const amount = parseFloat(String(receipt.amount)) || 0;
           spendingMap[receipt.category] = (spendingMap[receipt.category] || 0) + amount;
       });
       const byCategory = Object.entries(spendingMap).map(([category, total]) => ({

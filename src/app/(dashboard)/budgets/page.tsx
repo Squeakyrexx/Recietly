@@ -47,7 +47,7 @@ export default function BudgetsPage() {
         
         const spendingMap: { [key: string]: number } = {};
         currentMonthReceipts.forEach((receipt) => {
-            const amount = Number(receipt.amount || 0);
+            const amount = parseFloat(String(receipt.amount)) || 0;
             spendingMap[receipt.category] = (spendingMap[receipt.category] || 0) + amount;
         });
 
