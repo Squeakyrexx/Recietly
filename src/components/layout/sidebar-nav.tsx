@@ -10,7 +10,6 @@ import {
   SidebarMenuItem,
   SidebarMenuButton,
   SidebarFooter,
-  SidebarTrigger,
 } from '@/components/ui/sidebar';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Button } from '@/components/ui/button';
@@ -61,9 +60,6 @@ export function SidebarNav() {
         <div className="flex items-center gap-2">
           <Logo className="h-8 w-8 text-primary" />
           <span className="text-xl font-semibold">Recietly</span>
-          <div className="ml-auto">
-             <SidebarTrigger />
-          </div>
         </div>
       </SidebarHeader>
       <SidebarContent className="p-2">
