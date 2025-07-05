@@ -98,8 +98,9 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   };
   
   const upgradeToPro = () => {
-    if (user) {
-        localStorage.setItem(`premium_${user.uid}`, 'true');
+    const currentUser = auth.currentUser;
+    if (currentUser) {
+        localStorage.setItem(`premium_${currentUser.uid}`, 'true');
         setIsPremium(true);
     }
   };
