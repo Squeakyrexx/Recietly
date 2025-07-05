@@ -13,36 +13,38 @@ import { Skeleton } from '@/components/ui/skeleton';
 import { useToast } from '@/hooks/use-toast';
 
 export default function DashboardPage() {
-  const { user } = useAuth();
+  const { user, loading } = useAuth();
   const { toast } = useToast();
   const [totalSpending, setTotalSpending] = useState<number | null>(null);
   const [spendingByCategory, setSpendingByCategory] = useState<SpendingByCategory[] | null>(null);
   const [budgets, setBudgets] = useState<{ [key in Category]?: number } | null>(null);
 
   useEffect(() => {
-    if (user) {
-      const fetchData = async () => {
-        try {
-          const [total, byCategory, budgetData] = await Promise.all([
-            getTotalSpending(user.uid, { month: 'current' }),
-            getSpendingByCategory(user.uid, { month: 'current' }),
-            getBudgets(user.uid),
-          ]);
-          setTotalSpending(total);
-          setSpendingByCategory(byCategory);
-          setBudgets(budgetData);
-        } catch (error) {
-            console.error("Failed to fetch dashboard data:", error);
-            toast({
-                title: 'Error Loading Dashboard',
-                description: 'Could not load your spending summary. Please try again later.',
-                variant: 'destructive'
-            });
-        }
-      };
-      fetchData();
+    if (loading || !user) {
+        return;
     }
-  }, [user, toast]);
+
+    const fetchData = async () => {
+      try {
+        const [total, byCategory, budgetData] = await Promise.all([
+          getTotalSpending(user.uid, { month: 'current' }),
+          getSpendingByCategory(user.uid, { month: 'current' }),
+          getBudgets(user.uid),
+        ]);
+        setTotalSpending(total);
+        setSpendingByCategory(byCategory);
+        setBudgets(budgetData);
+      } catch (error) {
+          console.error("Failed to fetch dashboard data:", error);
+          toast({
+              title: 'Error Loading Dashboard',
+              description: 'Could not load your spending summary. Please try again later.',
+              variant: 'destructive'
+          });
+      }
+    };
+    fetchData();
+  }, [user, loading, toast]);
 
   const isLoading = totalSpending === null || spendingByCategory === null || budgets === null;
 

@@ -12,26 +12,31 @@ import { Skeleton } from '@/components/ui/skeleton';
 import { useToast } from '@/hooks/use-toast';
 
 export default function ReceiptsPage() {
-  const { user } = useAuth();
+  const { user, loading } = useAuth();
   const { toast } = useToast();
   const [receipts, setReceipts] = useState<Receipt[] | null>(null);
 
   useEffect(() => {
-    if (user) {
-        getReceipts(user.uid)
-          .then(data => {
+    if (loading || !user) {
+        return;
+    }
+
+    const fetchReceipts = async () => {
+        try {
+            const data = await getReceipts(user.uid);
             setReceipts(data);
-          })
-          .catch(error => {
+        } catch (error) {
             console.error("Failed to fetch receipts:", error);
             toast({
                 title: 'Error Loading Receipts',
                 description: 'Could not load your receipts. Please try again later.',
                 variant: 'destructive'
             });
-          });
-    }
-  }, [user, toast]);
+        }
+    };
+    
+    fetchReceipts();
+  }, [user, loading, toast]);
 
   return (
     <div className="space-y-6">
