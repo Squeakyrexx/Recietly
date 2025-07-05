@@ -7,7 +7,7 @@ import { addReceipt } from '@/lib/mock-data';
 import { useToast } from '@/hooks/use-toast';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
-import { Camera, Loader2, RefreshCw, Sparkles, Upload, Gem } from 'lucide-react';
+import { Camera, Loader2, Sparkles, Upload, Gem, X, Trash2 } from 'lucide-react';
 import { type ExtractedReceiptData, CATEGORIES, TAX_CATEGORIES, type TaxCategory, type LineItem } from '@/lib/types';
 import Image from 'next/image';
 import { ConfirmationDialog } from './confirmation-dialog';
@@ -33,7 +33,15 @@ const receiptDataSchema = z.object({
   })).optional(),
 });
 
-const SCAN_LIMIT = 100;
+// User request: set limit to 10.
+const SCAN_LIMIT = 10;
+
+// New type for staged files
+type StagedFile = {
+  id: string; // Use for react key and identification
+  file: File;
+  previewUrl: string;
+};
 
 export function UploadForm({ user, receiptCount }: { user: User; receiptCount: number }) {
   const [isExtracting, startExtractionTransition] = useTransition();
@@ -41,8 +49,10 @@ export function UploadForm({ user, receiptCount }: { user: User; receiptCount: n
   const { toast } = useToast();
   const { isPremium, upgradeToPro } = useAuth();
   
-  const [previewUrl, setPreviewUrl] = useState<string | null>(null);
-  const [photoDataUri, setPhotoDataUri] = useState<string | null>(null);
+  // State for the new multi-file flow
+  const [stagedFiles, setStagedFiles] = useState<StagedFile[]>([]);
+  const [activeFileForConfirmation, setActiveFileForConfirmation] = useState<StagedFile | null>(null);
+
   const [isConfirming, setIsConfirming] = useState(false);
   const [receiptData, setReceiptData] = useState<EditableReceiptData | null>(null);
   const [hasCameraPermission, setHasCameraPermission] = useState<boolean | null>(null);
@@ -50,6 +60,13 @@ export function UploadForm({ user, receiptCount }: { user: User; receiptCount: n
   const chooseFileInputRef = useRef<HTMLInputElement>(null);
   const videoRef = useRef<HTMLVideoElement>(null);
   const canvasRef = useRef<HTMLCanvasElement>(null);
+
+  useEffect(() => {
+    // Cleanup object URLs to prevent memory leaks
+    return () => {
+      stagedFiles.forEach(f => URL.revokeObjectURL(f.previewUrl));
+    };
+  }, [stagedFiles]);
 
   useEffect(() => {
     const getCameraPermission = async () => {
@@ -68,37 +85,29 @@ export function UploadForm({ user, receiptCount }: { user: User; receiptCount: n
       } catch (error) {
         console.error('Error accessing camera:', error);
         setHasCameraPermission(false);
-        toast({
-          variant: 'destructive',
-          title: 'Camera Access Denied',
-          description: 'Please enable camera permissions in your browser settings to use this feature.',
-        });
       }
     };
 
     getCameraPermission();
 
-    // Cleanup: stop video stream when component unmounts
     return () => {
       if (videoRef.current && videoRef.current.srcObject) {
         const stream = videoRef.current.srcObject as MediaStream;
         stream.getTracks().forEach(track => track.stop());
       }
     }
-  }, [toast]);
+  }, []);
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const selectedFile = e.target.files?.[0];
-    if (selectedFile) {
-      const reader = new FileReader();
-      reader.onloadend = () => {
-          const dataUri = reader.result as string;
-          setPreviewUrl(dataUri);
-          setPhotoDataUri(dataUri);
-      };
-      reader.readAsDataURL(selectedFile);
+    const files = e.target.files;
+    if (files) {
+      const newFiles: StagedFile[] = Array.from(files).map(file => ({
+        id: crypto.randomUUID(),
+        file: file,
+        previewUrl: URL.createObjectURL(file),
+      }));
+      setStagedFiles(prev => [...prev, ...newFiles]);
     }
-    // Reset file input value to allow re-uploading the same file
     if(e.target) e.target.value = "";
   };
   
@@ -112,46 +121,55 @@ export function UploadForm({ user, receiptCount }: { user: User; receiptCount: n
       const context = canvas.getContext('2d');
       if (context) {
         context.drawImage(video, 0, 0, canvas.width, canvas.height);
-        const dataUri = canvas.toDataURL('image/jpeg');
-        setPreviewUrl(dataUri);
-        setPhotoDataUri(dataUri);
+        canvas.toBlob(blob => {
+          if (blob) {
+            const file = new File([blob], `capture-${Date.now()}.jpg`, { type: 'image/jpeg' });
+            const newFile: StagedFile = {
+              id: crypto.randomUUID(),
+              file: file,
+              previewUrl: URL.createObjectURL(file),
+            };
+            setStagedFiles(prev => [...prev, newFile]);
+          }
+        }, 'image/jpeg');
       }
     }
   };
 
-  const handleProcessReceipt = () => {
-    if (!photoDataUri) {
-      toast({
-        title: 'Processing Error',
-        description: 'No photo to process.',
-        variant: 'destructive',
-      });
-      return;
-    }
+  const handleProcessReceipt = (fileToProcess: StagedFile) => {
+    if (!fileToProcess) return;
 
     startExtractionTransition(async () => {
-      const result = await extractReceiptDataAction({ photoDataUri });
+      const reader = new FileReader();
+      reader.readAsDataURL(fileToProcess.file);
+      reader.onloadend = async () => {
+        const dataUri = reader.result as string;
+        if (!dataUri) {
+          toast({ title: 'File Read Error', description: 'Could not read the selected file.', variant: 'destructive'});
+          return;
+        }
+        
+        setActiveFileForConfirmation(fileToProcess);
+        const result = await extractReceiptDataAction({ photoDataUri: dataUri });
 
-      if (result.data) {
-        setReceiptData({ ...result.data });
-        setIsConfirming(true);
-        toast({
-          title: 'Data Extracted',
-          description: 'Please review the information below and save.',
-        });
-      } else {
-        toast({
-          title: 'Extraction Error',
-          description: result.error || 'Could not extract data from the image.',
-          variant: 'destructive',
-        });
+        if (result.data) {
+          setReceiptData({ ...result.data });
+          setIsConfirming(true);
+        } else {
+          toast({
+            title: 'Extraction Error',
+            description: result.error || 'Could not extract data from the image.',
+            variant: 'destructive',
+          });
+          setActiveFileForConfirmation(null); // Clear active file on error
+        }
       }
     });
   };
 
   const handleSave = () => {
-    if (!receiptData || !user) {
-        toast({ title: 'You must be logged in.', variant: 'destructive'});
+    if (!receiptData || !user || !activeFileForConfirmation) {
+        toast({ title: 'An error occurred.', variant: 'destructive'});
         return;
     };
     
@@ -169,9 +187,18 @@ export function UploadForm({ user, receiptCount }: { user: User; receiptCount: n
                 ...validated.data,
                 description: validated.data.description || '',
             };
-
-            const imageDataUri = photoDataUri || `https://placehold.co/600x400.png`;
             
+            const fileToDataUri = (file: File) => new Promise<string>((resolve, reject) => {
+              const reader = new FileReader();
+              reader.onload = () => resolve(reader.result as string);
+              reader.onerror = error => reject(error);
+              reader.readAsDataURL(file);
+            });
+
+            const imageDataUri = activeFileForConfirmation.id === 'manual'
+                ? `https://placehold.co/600x400.png`
+                : await fileToDataUri(activeFileForConfirmation.file);
+
             await addReceipt(user.uid, { ...receiptToSave, imageDataUri });
             await revalidateAllAction();
 
@@ -179,7 +206,15 @@ export function UploadForm({ user, receiptCount }: { user: User; receiptCount: n
                 title: 'Success!',
                 description: "Receipt saved successfully!",
             });
-            resetForm();
+            
+            if (activeFileForConfirmation.id !== 'manual') {
+              setStagedFiles(prev => prev.filter(f => f.id !== activeFileForConfirmation!.id));
+              URL.revokeObjectURL(activeFileForConfirmation!.previewUrl);
+            }
+            
+            setIsConfirming(false);
+            setReceiptData(null);
+            setActiveFileForConfirmation(null);
         } catch (e) {
             const err = e as Error;
             toast({
@@ -191,14 +226,12 @@ export function UploadForm({ user, receiptCount }: { user: User; receiptCount: n
     });
   };
 
-  const resetForm = () => {
-    setPreviewUrl(null);
-    setPhotoDataUri(null);
-    setReceiptData(null);
-    setIsConfirming(false);
-    if (chooseFileInputRef.current) {
-        chooseFileInputRef.current.value = "";
+  const handleRemoveStagedFile = (fileId: string) => {
+    const fileToRemove = stagedFiles.find(f => f.id === fileId);
+    if(fileToRemove) {
+      URL.revokeObjectURL(fileToRemove.previewUrl);
     }
+    setStagedFiles(prev => prev.filter(f => f.id !== fileId));
   }
 
   const handleManualEntry = () => {
@@ -211,8 +244,11 @@ export function UploadForm({ user, receiptCount }: { user: User; receiptCount: n
         isBusinessExpense: false,
         items: [],
     });
-    setPreviewUrl(null);
-    setPhotoDataUri(null);
+    setActiveFileForConfirmation({ 
+        id: 'manual', 
+        file: new File([], "manual.jpg", {type: "image/jpeg"}), 
+        previewUrl: 'https://placehold.co/600x400.png'
+    });
     setIsConfirming(true);
   };
   
@@ -226,7 +262,7 @@ export function UploadForm({ user, receiptCount }: { user: User; receiptCount: n
 
   const limitReached = !isPremium && receiptCount >= SCAN_LIMIT;
 
-  if (limitReached) {
+  if (limitReached && stagedFiles.length === 0) {
       return (
         <Card className="border-primary/50 text-center">
             <CardHeader>
@@ -248,35 +284,63 @@ export function UploadForm({ user, receiptCount }: { user: User; receiptCount: n
     <>
       <ConfirmationDialog
         open={isConfirming}
-        onOpenChange={setIsConfirming}
+        onOpenChange={(open) => {
+          if(!open) {
+            setIsConfirming(false);
+            setReceiptData(null);
+            setActiveFileForConfirmation(null);
+          }
+        }}
         receiptData={receiptData}
         setReceiptData={setReceiptData}
-        previewUrl={previewUrl}
+        previewUrl={activeFileForConfirmation?.previewUrl || null}
         onSave={handleSave}
         isSaving={isSaving}
       />
       <div className="space-y-4">
         <canvas ref={canvasRef} className="hidden" />
 
-        {previewUrl ? (
-          <div className="space-y-4 text-center">
-            <div className="relative aspect-video w-full rounded-lg overflow-hidden border bg-muted">
-                <Image src={previewUrl} alt="Receipt preview" fill className="object-contain" />
+        {/* STAGING AREA */}
+        {stagedFiles.length > 0 && (
+          <div className="space-y-4">
+            <h3 className="font-semibold text-lg">Ready to Process</h3>
+            <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-4">
+              {stagedFiles.map(file => (
+                <Card key={file.id} className="group relative overflow-hidden">
+                  <div className="relative aspect-square w-full bg-muted">
+                    <Image src={file.previewUrl} alt="Receipt preview" fill className="object-cover" />
+                  </div>
+                  <div className="absolute inset-0 bg-black/50 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
+                    <Button 
+                      size="sm"
+                      onClick={() => handleProcessReceipt(file)}
+                      disabled={isExtracting || isSaving || (isPremium ? false : (receiptCount + stagedFiles.length > SCAN_LIMIT))}
+                    >
+                      {(isExtracting || isSaving) && activeFileForConfirmation?.id === file.id ? <Loader2 className="h-4 w-4 animate-spin"/> : 'Process'}
+                    </Button>
+                  </div>
+                  <Button
+                      variant="destructive"
+                      size="icon"
+                      className="absolute top-1 right-1 h-7 w-7 opacity-70 group-hover:opacity-100"
+                      onClick={() => handleRemoveStagedFile(file.id)}
+                  >
+                    <X className="h-4 w-4" />
+                  </Button>
+                </Card>
+              ))}
             </div>
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <Button onClick={handleProcessReceipt} disabled={isExtracting} size="lg">
-                    {isExtracting ? (
-                      <><Loader2 className="mr-2 h-4 w-4 animate-spin" /> Processing with AI</>
-                    ) : (
-                      <><Sparkles className="mr-2 h-4 w-4" /> Process with AI</>
-                    )}
-                </Button>
-                <Button variant="outline" onClick={() => resetForm()} size="lg">
-                    <RefreshCw className="mr-2 h-4 w-4" /> Retake or Upload
+             <div className="flex justify-between items-center">
+                <p className="text-sm text-muted-foreground">{stagedFiles.length} file(s) staged.</p>
+                <Button variant="outline" onClick={() => setStagedFiles([])}>
+                    <Trash2 className="mr-2 h-4 w-4"/> Clear All
                 </Button>
             </div>
           </div>
-        ) : (
+        )}
+
+        {/* UPLOAD VIEW (shown when staging is empty) */}
+        {stagedFiles.length === 0 && (
           <div className="space-y-4">
             <Card className="relative aspect-video w-full overflow-hidden flex items-center justify-center bg-black">
               <video ref={videoRef} className="w-full h-full object-cover" autoPlay muted playsInline />
@@ -311,6 +375,7 @@ export function UploadForm({ user, receiptCount }: { user: User; receiptCount: n
                 type="file"
                 className="sr-only"
                 accept="image/*"
+                multiple // Allow multiple file selection
                 onChange={handleFileChange}
                 ref={chooseFileInputRef}
               />
