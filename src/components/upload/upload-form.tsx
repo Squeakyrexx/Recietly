@@ -7,7 +7,7 @@ import { addReceipt } from '@/lib/mock-data';
 import { useToast } from '@/hooks/use-toast';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
-import { Camera, Loader2, Sparkles, Upload, Gem, X, Trash2 } from 'lucide-react';
+import { Camera, Loader2, Sparkles, Upload, Gem, X } from 'lucide-react';
 import { type ExtractedReceiptData, CATEGORIES, TAX_CATEGORIES, type TaxCategory, type LineItem } from '@/lib/types';
 import Image from 'next/image';
 import { ConfirmationDialog } from './confirmation-dialog';
@@ -16,7 +16,6 @@ import { z } from 'zod';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { Card, CardHeader, CardTitle, CardDescription, CardContent } from '@/components/ui/card';
 import { useAuth } from '@/context/auth-context';
-import { Separator } from '@/components/ui/separator';
 
 type EditableReceiptData = ExtractedReceiptData & { isBusinessExpense?: boolean; taxCategory?: TaxCategory; items?: LineItem[] };
 
@@ -36,23 +35,14 @@ const receiptDataSchema = z.object({
 
 const SCAN_LIMIT = 10;
 
-// New type for staged files
-type StagedFile = {
-  id: string; // Use for react key and identification
-  file: File;
-  previewUrl: string;
-};
-
 export function UploadForm({ user, receiptCount }: { user: User; receiptCount: number }) {
+  const [file, setFile] = useState<File | null>(null);
+  const [previewUrl, setPreviewUrl] = useState<string | null>(null);
   const [isExtracting, startExtractionTransition] = useTransition();
   const [isSaving, startSavingTransition] = useTransition();
   const { toast } = useToast();
   const { isPremium, upgradeToPro } = useAuth();
   
-  // State for the new multi-file flow
-  const [stagedFiles, setStagedFiles] = useState<StagedFile[]>([]);
-  const [activeFileForConfirmation, setActiveFileForConfirmation] = useState<StagedFile | null>(null);
-
   const [isConfirming, setIsConfirming] = useState(false);
   const [receiptData, setReceiptData] = useState<EditableReceiptData | null>(null);
   const [hasCameraPermission, setHasCameraPermission] = useState<boolean | null>(null);
@@ -62,11 +52,13 @@ export function UploadForm({ user, receiptCount }: { user: User; receiptCount: n
   const canvasRef = useRef<HTMLCanvasElement>(null);
 
   useEffect(() => {
-    // Cleanup object URLs to prevent memory leaks
+    // Cleanup object URL to prevent memory leaks
     return () => {
-      stagedFiles.forEach(f => URL.revokeObjectURL(f.previewUrl));
+      if (previewUrl && previewUrl.startsWith('blob:')) {
+        URL.revokeObjectURL(previewUrl);
+      }
     };
-  }, [stagedFiles]);
+  }, [previewUrl]);
 
   useEffect(() => {
     const getCameraPermission = async () => {
@@ -98,17 +90,20 @@ export function UploadForm({ user, receiptCount }: { user: User; receiptCount: n
     }
   }, []);
 
-  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const files = e.target.files;
-    if (files) {
-      const newFiles: StagedFile[] = Array.from(files).map(file => ({
-        id: crypto.randomUUID(),
-        file: file,
-        previewUrl: URL.createObjectURL(file),
-      }));
-      setStagedFiles(prev => [...prev, ...newFiles]);
+  const handleFileSelected = (selectedFile: File) => {
+    if (previewUrl) {
+      URL.revokeObjectURL(previewUrl);
     }
-    if(e.target) e.target.value = "";
+    setFile(selectedFile);
+    setPreviewUrl(URL.createObjectURL(selectedFile));
+  };
+  
+  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file) {
+      handleFileSelected(file);
+    }
+    if(e.target) e.target.value = ""; // Reset input to allow same file selection
   };
   
   const handleSnapPhoto = () => {
@@ -124,24 +119,19 @@ export function UploadForm({ user, receiptCount }: { user: User; receiptCount: n
         canvas.toBlob(blob => {
           if (blob) {
             const file = new File([blob], `capture-${Date.now()}.jpg`, { type: 'image/jpeg' });
-            const newFile: StagedFile = {
-              id: crypto.randomUUID(),
-              file: file,
-              previewUrl: URL.createObjectURL(file),
-            };
-            setStagedFiles(prev => [...prev, newFile]);
+            handleFileSelected(file);
           }
         }, 'image/jpeg');
       }
     }
   };
 
-  const handleProcessReceipt = (fileToProcess: StagedFile) => {
-    if (!fileToProcess) return;
+  const handleProcessReceipt = () => {
+    if (!file) return;
 
     startExtractionTransition(async () => {
       const reader = new FileReader();
-      reader.readAsDataURL(fileToProcess.file);
+      reader.readAsDataURL(file);
       reader.onloadend = async () => {
         const dataUri = reader.result as string;
         if (!dataUri) {
@@ -149,7 +139,6 @@ export function UploadForm({ user, receiptCount }: { user: User; receiptCount: n
           return;
         }
         
-        setActiveFileForConfirmation(fileToProcess);
         const result = await extractReceiptDataAction({ photoDataUri: dataUri });
 
         if (result.data) {
@@ -161,14 +150,21 @@ export function UploadForm({ user, receiptCount }: { user: User; receiptCount: n
             description: result.error || 'Could not extract data from the image.',
             variant: 'destructive',
           });
-          setActiveFileForConfirmation(null); // Clear active file on error
         }
       }
     });
   };
 
+  const resetForm = () => {
+      setIsConfirming(false);
+      setReceiptData(null);
+      if (previewUrl) URL.revokeObjectURL(previewUrl);
+      setFile(null);
+      setPreviewUrl(null);
+  };
+
   const handleSave = () => {
-    if (!receiptData || !user || !activeFileForConfirmation) {
+    if (!receiptData || !user || !previewUrl) {
         toast({ title: 'An error occurred.', variant: 'destructive'});
         return;
     };
@@ -194,10 +190,11 @@ export function UploadForm({ user, receiptCount }: { user: User; receiptCount: n
               reader.onerror = error => reject(error);
               reader.readAsDataURL(file);
             });
-
-            const imageDataUri = activeFileForConfirmation.id === 'manual'
-                ? `https://placehold.co/600x400.png`
-                : await fileToDataUri(activeFileForConfirmation.file);
+            
+            // If it's the manual entry placeholder, use it, otherwise use the actual file.
+            const imageDataUri = previewUrl === 'https://placehold.co/600x400.png' 
+                ? previewUrl 
+                : await fileToDataUri(file!);
 
             await addReceipt(user.uid, { ...receiptToSave, imageDataUri });
             await revalidateAllAction();
@@ -207,14 +204,7 @@ export function UploadForm({ user, receiptCount }: { user: User; receiptCount: n
                 description: "Receipt saved successfully!",
             });
             
-            if (activeFileForConfirmation.id !== 'manual') {
-              setStagedFiles(prev => prev.filter(f => f.id !== activeFileForConfirmation!.id));
-              URL.revokeObjectURL(activeFileForConfirmation!.previewUrl);
-            }
-            
-            setIsConfirming(false);
-            setReceiptData(null);
-            setActiveFileForConfirmation(null);
+            resetForm(); // Reset form for next upload
         } catch (e) {
             const err = e as Error;
             toast({
@@ -226,15 +216,8 @@ export function UploadForm({ user, receiptCount }: { user: User; receiptCount: n
     });
   };
 
-  const handleRemoveStagedFile = (fileId: string) => {
-    const fileToRemove = stagedFiles.find(f => f.id === fileId);
-    if(fileToRemove) {
-      URL.revokeObjectURL(fileToRemove.previewUrl);
-    }
-    setStagedFiles(prev => prev.filter(f => f.id !== fileId));
-  }
-
   const handleManualEntry = () => {
+    resetForm();
     setReceiptData({
         merchant: '',
         amount: 0,
@@ -244,11 +227,7 @@ export function UploadForm({ user, receiptCount }: { user: User; receiptCount: n
         isBusinessExpense: false,
         items: [],
     });
-    setActiveFileForConfirmation({ 
-        id: 'manual', 
-        file: new File([], "manual.jpg", {type: "image/jpeg"}), 
-        previewUrl: 'https://placehold.co/600x400.png'
-    });
+    setPreviewUrl('https://placehold.co/600x400.png'); // Placeholder for manual entry
     setIsConfirming(true);
   };
   
@@ -262,7 +241,7 @@ export function UploadForm({ user, receiptCount }: { user: User; receiptCount: n
 
   const limitReached = !isPremium && receiptCount >= SCAN_LIMIT;
 
-  if (limitReached && stagedFiles.length === 0) {
+  if (limitReached && !file) {
       return (
         <Card className="border-primary/50 text-center">
             <CardHeader>
@@ -286,62 +265,49 @@ export function UploadForm({ user, receiptCount }: { user: User; receiptCount: n
         open={isConfirming}
         onOpenChange={(open) => {
           if(!open) {
-            setIsConfirming(false);
-            setReceiptData(null);
-            setActiveFileForConfirmation(null);
+            resetForm();
           }
         }}
         receiptData={receiptData}
         setReceiptData={setReceiptData}
-        previewUrl={activeFileForConfirmation?.previewUrl || null}
+        previewUrl={previewUrl}
         onSave={handleSave}
         isSaving={isSaving}
       />
-      <div className="space-y-6">
+      <div className="space-y-4">
         <canvas ref={canvasRef} className="hidden" />
 
-        {/* STAGING AREA */}
-        {stagedFiles.length > 0 && (
+        {previewUrl ? (
+          // PREVIEW VIEW
           <div className="space-y-4">
-            <h3 className="font-semibold text-lg">Ready to Process</h3>
-            <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-4">
-              {stagedFiles.map(file => (
-                <Card key={file.id} className="group relative overflow-hidden">
-                  <div className="relative aspect-square w-full bg-muted">
-                    <Image src={file.previewUrl} alt="Receipt preview" fill className="object-cover" />
-                  </div>
-                  <div className="absolute inset-0 bg-black/50 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
-                    <Button 
-                      size="sm"
-                      onClick={() => handleProcessReceipt(file)}
-                      disabled={isExtracting || isSaving || (isPremium ? false : (receiptCount + stagedFiles.length > SCAN_LIMIT))}
-                    >
-                      {(isExtracting || isSaving) && activeFileForConfirmation?.id === file.id ? <Loader2 className="h-4 w-4 animate-spin"/> : 'Process'}
-                    </Button>
-                  </div>
-                  <Button
-                      variant="destructive"
-                      size="icon"
-                      className="absolute top-1 right-1 h-7 w-7 opacity-70 group-hover:opacity-100"
-                      onClick={() => handleRemoveStagedFile(file.id)}
-                  >
+            <div className="relative aspect-video w-full rounded-lg overflow-hidden border">
+                <Image src={previewUrl} alt="Receipt preview" fill className="object-contain" />
+                <Button variant="destructive" size="icon" className="absolute top-2 right-2 h-8 w-8" onClick={resetForm}>
                     <X className="h-4 w-4" />
-                  </Button>
-                </Card>
-              ))}
-            </div>
-             <div className="flex justify-between items-center">
-                <p className="text-sm text-muted-foreground">{stagedFiles.length} file(s) staged.</p>
-                <Button variant="outline" onClick={() => setStagedFiles([])}>
-                    <Trash2 className="mr-2 h-4 w-4"/> Clear All
                 </Button>
             </div>
-            <Separator />
+            <Button
+              onClick={handleProcessReceipt}
+              disabled={isExtracting}
+              className="w-full"
+              size="lg"
+            >
+              {isExtracting ? (
+                <>
+                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                  Extracting...
+                </>
+              ) : (
+                <>
+                  <Sparkles className="mr-2 h-4 w-4" />
+                  Extract Receipt Data
+                </>
+              )}
+            </Button>
           </div>
-        )}
-
-        {/* UPLOAD VIEW - always visible now */}
-        <div className="space-y-4">
+        ) : (
+          // UPLOAD VIEW
+          <div className="space-y-4">
             <Card className="relative aspect-video w-full overflow-hidden flex items-center justify-center bg-black">
                 <video ref={videoRef} className="w-full h-full object-cover" autoPlay muted playsInline />
                 {hasCameraPermission === false && (
@@ -350,8 +316,7 @@ export function UploadForm({ user, receiptCount }: { user: User; receiptCount: n
                     <Alert variant="destructive" className="text-destructive-foreground border-destructive/50 bg-destructive/80">
                         <AlertTitle>Camera Access Denied</AlertTitle>
                         <AlertDescription>
-                            Enable camera permissions in your browser to use this feature.
-                            You can still upload a file from your library.
+                            Enable camera permissions to use this feature, or upload a file.
                         </AlertDescription>
                     </Alert>
                     </div>
@@ -375,15 +340,15 @@ export function UploadForm({ user, receiptCount }: { user: User; receiptCount: n
                     type="file"
                     className="sr-only"
                     accept="image/*"
-                    multiple // Allow multiple file selection
                     onChange={handleFileChange}
                     ref={chooseFileInputRef}
                 />
             </div>
-            <p className="text-sm text-center text-muted-foreground">
-                No photo? <Button variant="link" onClick={handleManualEntry} className="p-0 h-auto">Enter details manually</Button>.
-            </p>
-        </div>
+          </div>
+        )}
+        <p className="text-sm text-center text-muted-foreground">
+            No photo? <Button variant="link" onClick={handleManualEntry} className="p-0 h-auto">Enter details manually</Button>.
+        </p>
       </div>
     </>
   );
