@@ -47,7 +47,7 @@ export default function TaxReportPage() {
         report[category] = { count: 0, total: 0 };
       }
       report[category].count++;
-      report[category].total += (parseFloat(String(receipt.amount)) || 0);
+      report[category].total += receipt.amount;
     });
 
     const reportRows: ReportRow[] = Object.entries(report).map(([category, data]) => ({
