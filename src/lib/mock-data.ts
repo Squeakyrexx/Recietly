@@ -11,6 +11,7 @@ import {
   setDoc,
   getDoc,
   where,
+  onSnapshot,
 } from 'firebase/firestore';
 import { db } from './firebase';
 import { type Receipt, type SpendingByCategory, type Category, CATEGORIES } from '@/lib/types';
@@ -159,4 +160,52 @@ export const setBudget = async (userId: string, { category, amount }: { category
     const budgetsDocRef = doc(db, 'users', userId, 'budgets', 'data');
     // We use setDoc with merge: true to create or update the document
     await setDoc(budgetsDocRef, { [category]: amount }, { merge: true });
+}
+
+// REAL-TIME LISTENERS
+
+export const listenToReceipts = (
+  userId: string,
+  callback: (receipts: Receipt[]) => void,
+  onError: (error: Error) => void
+) => {
+  if (!userId) return () => {}; // Return an empty unsubscribe function if no user
+  const receiptsCollection = collection(db, 'users', userId, 'receipts');
+  const q = query(receiptsCollection, orderBy('date', 'desc'));
+
+  const unsubscribe = onSnapshot(q, (querySnapshot) => {
+    const receipts: Receipt[] = [];
+    querySnapshot.forEach((doc) => {
+      receipts.push({ id: doc.id, ...doc.data() } as Receipt);
+    });
+    callback(receipts);
+  }, (error) => {
+      console.error(`Error listening to receipts for user ${userId}:`, error);
+      onError(error);
+  });
+
+  return unsubscribe;
+};
+
+export const listenToBudgets = (
+  userId: string,
+  callback: (budgets: { [key in Category]?: number }) => void,
+  onError: (error: Error) => void
+) => {
+  if (!userId) return () => {}; // Return an empty unsubscribe function if no user
+  const budgetsDocRef = doc(db, 'users', userId, 'budgets', 'data');
+
+  const unsubscribe = onSnapshot(budgetsDocRef, (docSnap) => {
+     if (docSnap.exists()) {
+        callback(docSnap.data() as { [key in Category]?: number });
+    } else {
+        // If no document exists, provide a default object
+        callback(CATEGORIES.reduce((acc, cat) => ({...acc, [cat]: 0}), {} as { [key in Category]?: number }));
+    }
+  }, (error) => {
+      console.error(`Error listening to budgets for user ${userId}:`, error);
+      onError(error);
+  });
+
+  return unsubscribe;
 }

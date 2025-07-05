@@ -2,7 +2,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { getBudgets, getSpendingByCategory } from "@/lib/mock-data";
+import { listenToBudgets, listenToReceipts } from "@/lib/mock-data";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { BudgetForm } from "@/components/budgets/budget-form";
 import { CATEGORIES, type SpendingByCategory, type Category } from "@/lib/types";
@@ -18,33 +18,49 @@ export default function BudgetsPage() {
 
   useEffect(() => {
     if (loading || !user) {
+        setInitialBudgets(null);
+        setSpendingThisMonth(null);
         return;
     }
 
-    const fetchData = async () => {
-      try {
-        const [budgetsData, spendingData] = await Promise.all([
-          getBudgets(user.uid),
-          getSpendingByCategory(user.uid, { month: 'current' }),
-        ]);
-        
+    const handleFetchError = (error: Error) => {
+        console.error("Failed to fetch budget data:", error);
+        toast({
+            title: 'Error Loading Data',
+            description: 'Could not load your budget information. Please try again later.',
+            variant: 'destructive'
+        });
+    };
+
+    const unsubscribeBudgets = listenToBudgets(user.uid, (budgetsData) => {
         const budgetsWithDefaults = CATEGORIES.reduce((acc, category) => {
           acc[category] = budgetsData[category] || 0;
           return acc;
         }, {} as { [key: string]: number });
-
         setInitialBudgets(budgetsWithDefaults);
-        setSpendingThisMonth(spendingData);
-      } catch (error) {
-          console.error("Failed to fetch budget data:", error);
-          toast({
-              title: 'Error Loading Data',
-              description: 'Could not load your budget information. Please try again later.',
-              variant: 'destructive'
-          });
-      }
+    }, handleFetchError);
+
+    const unsubscribeReceipts = listenToReceipts(user.uid, (receiptsData) => {
+        const now = new Date();
+        const currentYearMonth = now.toISOString().slice(0, 7);
+        const currentMonthReceipts = receiptsData.filter(r => r.date && r.date.startsWith(currentYearMonth));
+        
+        const spendingMap: { [key: string]: number } = {};
+        currentMonthReceipts.forEach((receipt) => {
+            spendingMap[receipt.category] = (spendingMap[receipt.category] || 0) + receipt.amount;
+        });
+
+        const spendingByCategory = Object.entries(spendingMap).map(([category, total]) => ({
+          category: category as Category,
+          total: parseFloat(total.toFixed(2)),
+        }));
+        setSpendingThisMonth(spendingByCategory);
+    }, handleFetchError);
+
+    return () => {
+        unsubscribeBudgets();
+        unsubscribeReceipts();
     };
-    fetchData();
   }, [user, loading, toast]);
 
   const isLoading = !initialBudgets || !spendingThisMonth;

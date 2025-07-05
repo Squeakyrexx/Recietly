@@ -2,7 +2,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { getReceipts } from '@/lib/mock-data';
+import { listenToReceipts } from '@/lib/mock-data';
 import { Button } from '@/components/ui/button';
 import Link from 'next/link';
 import { ReceiptsList } from '@/components/receipts/receipts-list';
@@ -18,24 +18,23 @@ export default function ReceiptsPage() {
 
   useEffect(() => {
     if (loading || !user) {
+        setReceipts(null); // Clear data when logged out or loading
         return;
     }
 
-    const fetchReceipts = async () => {
-        try {
-            const data = await getReceipts(user.uid);
-            setReceipts(data);
-        } catch (error) {
-            console.error("Failed to fetch receipts:", error);
-            toast({
-                title: 'Error Loading Receipts',
-                description: 'Could not load your receipts. Please try again later.',
-                variant: 'destructive'
-            });
-        }
-    };
+    const unsubscribe = listenToReceipts(user.uid, (data) => {
+        setReceipts(data);
+    }, (error) => {
+        console.error("Failed to fetch receipts:", error);
+        toast({
+            title: 'Error Loading Receipts',
+            description: 'Could not load your receipts. Please try again later.',
+            variant: 'destructive'
+        });
+    });
     
-    fetchReceipts();
+    // Cleanup subscription on component unmount
+    return () => unsubscribe();
   }, [user, loading, toast]);
 
   return (
