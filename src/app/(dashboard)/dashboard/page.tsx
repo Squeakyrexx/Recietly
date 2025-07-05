@@ -37,27 +37,23 @@ export default function DashboardPage() {
     };
 
     const unsubscribeReceipts = listenToReceipts(user.uid, (receipts) => {
-      const now = new Date();
-      const currentMonth = now.toISOString().slice(0, 7);
-      const currentReceipts = receipts.filter(r => r.date?.startsWith(currentMonth));
+      // The `receipts` from the listener are already sanitized to have numeric amounts.
       
-      let calculatedTotal = 0;
-      const calculatedSpendingMap: { [key in Category]?: number } = {};
-
-      for (const receipt of currentReceipts) {
-        // Ensure amount is treated as a number
-        const amount = parseFloat(String(receipt.amount)) || 0;
-        calculatedTotal += amount;
-        
-        const category = receipt.category;
-        calculatedSpendingMap[category] = (calculatedSpendingMap[category] || 0) + amount;
-      }
-      
+      // Calculate total spending for ALL receipts.
+      const calculatedTotal = receipts.reduce((sum, receipt) => sum + (Number(receipt.amount) || 0), 0);
       setTotalSpending(calculatedTotal);
 
-      const byCategory = Object.entries(calculatedSpendingMap).map(([category, total]) => ({
+      // Calculate spending by category for ALL receipts.
+      const spendingMap = receipts.reduce((acc, receipt) => {
+          const category = receipt.category;
+          const amount = Number(receipt.amount) || 0;
+          acc[category] = (acc[category] || 0) + amount;
+          return acc;
+      }, {} as { [key in Category]?: number });
+
+      const byCategory = Object.entries(spendingMap).map(([category, total]) => ({
           category: category as Category,
-          total: parseFloat(total.toFixed(2)),
+          total: parseFloat(total!.toFixed(2)),
       }));
       setSpendingByCategory(byCategory);
 
@@ -77,7 +73,7 @@ export default function DashboardPage() {
     <div className="space-y-6">
       <header>
         <h1 className="font-headline text-3xl font-bold tracking-tight">Dashboard</h1>
-        <p className="text-muted-foreground">A summary of your spending habits for this month.</p>
+        <p className="text-muted-foreground">A summary of your all-time spending habits.</p>
       </header>
       <div className="grid grid-cols-1 gap-6 md:grid-cols-2 lg:grid-cols-3">
         {isLoading ? (
