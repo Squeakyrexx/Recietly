@@ -8,11 +8,11 @@ import { AiInsights } from '@/components/dashboard/ai-insights';
 import { listenToReceipts, listenToBudgets } from '@/lib/mock-data';
 import { BudgetSummary } from '@/components/dashboard/budget-summary';
 import { useAuth } from '@/context/auth-context';
-import type { SpendingByCategory, Category, Receipt } from '@/lib/types';
+import { type SpendingByCategory, type Category, type Receipt, CATEGORIES } from '@/lib/types';
 import { Skeleton } from '@/components/ui/skeleton';
 import { useToast } from '@/hooks/use-toast';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { subMonths, startOfMonth, startOfYear, endOfToday } from 'date-fns';
+import { subMonths, startOfMonth, endOfMonth, startOfYear, endOfYear, subYears, endOfToday, subDays } from 'date-fns';
 
 type DateRange = 'this-month' | 'last-3-months' | 'this-year' | 'all-time';
 
@@ -23,6 +23,32 @@ const dateRangeOptions: { value: DateRange; label: string }[] = [
   { value: 'all-time', label: 'All Time' },
 ];
 
+const getPreviousDateRange = (range: DateRange, currentStartDate: Date) => {
+    const now = endOfToday();
+    let prevStartDate: Date;
+    let prevEndDate: Date;
+
+    switch (range) {
+        case 'this-month':
+            prevStartDate = startOfMonth(subMonths(now, 1));
+            prevEndDate = endOfMonth(subMonths(now, 1));
+            break;
+        case 'last-3-months':
+             // Previous 3 months, starting from the end of the current 3-month period.
+            prevStartDate = subMonths(currentStartDate, 3);
+            prevEndDate = subDays(currentStartDate, 1);
+            break;
+        case 'this-year':
+            prevStartDate = startOfYear(subYears(now, 1));
+            prevEndDate = endOfYear(subYears(now, 1));
+            break;
+        case 'all-time':
+        default:
+            return { prevStartDate: null, prevEndDate: null };
+    }
+    return { prevStartDate, prevEndDate };
+};
+
 export default function DashboardPage() {
   const { user, loading } = useAuth();
   const { toast } = useToast();
@@ -32,7 +58,6 @@ export default function DashboardPage() {
   const [allReceipts, setAllReceipts] = useState<Receipt[] | null>(null);
   const [budgets, setBudgets] = useState<{ [key in Category]?: number } | null>(null);
 
-  // Memoized calculations based on allReceipts and dateRange
   const filteredData = useMemo(() => {
     if (!allReceipts) return null;
 
@@ -51,17 +76,12 @@ export default function DashboardPage() {
         break;
       case 'all-time':
       default:
-        startDate = new Date(0); // A very long time ago
+        startDate = new Date(0);
         break;
     }
     
-    // Filter receipts for the selected date range
     const receiptsInRange = allReceipts.filter(r => new Date(r.date.replace(/-/g, '/')) >= startDate);
-    
-    // Calculate total spending for the range
     const totalSpending = receiptsInRange.reduce((sum, receipt) => sum + (Number(receipt.amount) || 0), 0);
-
-    // Calculate spending by category for the range
     const spendingMap = receiptsInRange.reduce((acc, receipt) => {
         const category = receipt.category;
         const amount = Number(receipt.amount) || 0;
@@ -69,6 +89,35 @@ export default function DashboardPage() {
         return acc;
     }, {} as { [key in Category]?: number });
 
+    // Previous period calculations
+    const { prevStartDate, prevEndDate } = getPreviousDateRange(dateRange, startDate);
+    let previousPeriodReceipts: Receipt[] = [];
+    if (prevStartDate && prevEndDate) {
+        previousPeriodReceipts = allReceipts.filter(r => {
+            const receiptDate = new Date(r.date.replace(/-/g, '/'));
+            return receiptDate >= prevStartDate && receiptDate <= prevEndDate;
+        });
+    }
+    const previousTotalSpending = previousPeriodReceipts.reduce((sum, receipt) => sum + (Number(receipt.amount) || 0), 0);
+    const previousSpendingMap = previousPeriodReceipts.reduce((acc, receipt) => {
+        const category = receipt.category;
+        const amount = Number(receipt.amount) || 0;
+        acc[category] = (acc[category] || 0) + amount;
+        return acc;
+    }, {} as { [key in Category]?: number });
+
+    // Combine current and previous data for the chart
+    const spendingByCategoryWithComparison = CATEGORIES.map(category => {
+        const currentTotal = spendingMap[category] || 0;
+        const previousTotal = previousSpendingMap[category] || 0;
+        return {
+            category,
+            total: parseFloat(currentTotal.toFixed(2)),
+            previousTotal: parseFloat(previousTotal.toFixed(2)),
+        };
+    }).filter(d => d.total > 0 || d.previousTotal > 0);
+
+    // Sort for TopSpendingCard
     const spendingByCategory = Object.entries(spendingMap).map(([category, total]) => ({
         category: category as Category,
         total: parseFloat(total!.toFixed(2)),
@@ -77,11 +126,12 @@ export default function DashboardPage() {
     return {
       receipts: receiptsInRange,
       totalSpending,
+      previousTotalSpending,
       spendingByCategory,
+      spendingByCategoryWithComparison,
     }
   }, [allReceipts, dateRange]);
 
-  // Memoized calculation for *this month's* spending, specifically for the budget summary
   const spendingThisMonth = useMemo(() => {
     if (!allReceipts) return null;
     
@@ -130,6 +180,7 @@ export default function DashboardPage() {
 
   const isLoading = !filteredData || !budgets || !spendingThisMonth;
   const cardTitle = `Total Spending (${dateRangeOptions.find(o => o.value === dateRange)?.label})`;
+  const showComparison = dateRange !== 'all-time';
 
   return (
     <div className="space-y-6">
@@ -165,13 +216,17 @@ export default function DashboardPage() {
         ) : (
           <>
             <div className="lg:col-span-1">
-              <TotalSpendingCard total={filteredData.totalSpending} title={cardTitle} />
+              <TotalSpendingCard 
+                total={filteredData.totalSpending} 
+                title={cardTitle} 
+                previousTotal={showComparison ? filteredData.previousTotalSpending : undefined}
+              />
             </div>
             <div className="lg:col-span-2">
               <BudgetSummary budgets={budgets} spending={spendingThisMonth} />
             </div>
             <div className="lg:col-span-2">
-              <CategorySpendingChart data={filteredData.spendingByCategory} />
+              <CategorySpendingChart data={filteredData.spendingByCategoryWithComparison} showComparison={showComparison} />
             </div>
             <div className="lg:col-span-1">
               <TopSpendingCard data={filteredData.spendingByCategory} />

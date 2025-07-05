@@ -1,28 +1,44 @@
 'use client';
 
-import { Bar, BarChart, XAxis, YAxis, Tooltip } from 'recharts';
+import { useMemo } from 'react';
+import { Bar, BarChart, XAxis, YAxis, Tooltip, Cell } from 'recharts';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
-import { type SpendingByCategory } from '@/lib/types';
+import { type Category } from '@/lib/types';
 import { ChartContainer, ChartTooltipContent, type ChartConfig } from '@/components/ui/chart';
+import { getCategoryColor } from '@/lib/utils';
 
-const chartConfig = {
-  total: {
-    label: 'Spending',
-    color: 'hsl(var(--primary))',
-  },
-} satisfies ChartConfig;
+interface ChartData {
+  category: Category;
+  total: number;
+  previousTotal: number;
+}
 
+export function CategorySpendingChart({ data, showComparison }: { data: ChartData[], showComparison: boolean }) {
+  
+  const chartData = useMemo(() => {
+    return data.map(item => ({
+      ...item,
+      fill: getCategoryColor(item.category),
+    }));
+  }, [data]);
+  
+  const chartConfig = {
+    total: { label: 'Current' },
+    previousTotal: { label: 'Previous' },
+  } satisfies ChartConfig;
 
-export function CategorySpendingChart({ data }: { data: SpendingByCategory[] }) {
   return (
     <Card>
       <CardHeader>
         <CardTitle>Spending by Category</CardTitle>
-        <CardDescription>A breakdown of your expenses.</CardDescription>
+        <CardDescription>A breakdown of your expenses compared to the previous period.</CardDescription>
       </CardHeader>
       <CardContent>
         <ChartContainer config={chartConfig} className="h-[300px] w-full">
-          <BarChart data={data} margin={{ top: 5, right: 20, left: -10, bottom: 5 }}>
+          <BarChart 
+            data={chartData} 
+            margin={{ top: 5, right: 20, left: -10, bottom: 5 }}
+          >
             <XAxis
               dataKey="category"
               stroke="#888888"
@@ -41,7 +57,18 @@ export function CategorySpendingChart({ data }: { data: SpendingByCategory[] }) 
               cursor={{ fill: 'hsl(var(--muted))' }}
               content={<ChartTooltipContent />}
             />
-            <Bar dataKey="total" fill="var(--color-total)" radius={[4, 4, 0, 0]} />
+            {showComparison && (
+              <Bar 
+                dataKey="previousTotal" 
+                fill="hsl(var(--muted))" 
+                radius={[4, 4, 0, 0]} 
+              />
+            )}
+            <Bar dataKey="total" radius={[4, 4, 0, 0]}>
+                {chartData.map((entry, index) => (
+                    <Cell key={`cell-${index}`} fill={entry.fill} />
+                ))}
+            </Bar>
           </BarChart>
         </ChartContainer>
       </CardContent>

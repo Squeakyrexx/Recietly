@@ -59,6 +59,14 @@ export default {
           '4': 'hsl(var(--chart-4))',
           '5': 'hsl(var(--chart-5))',
         },
+        category: {
+          groceries: 'hsl(var(--category-groceries))',
+          transport: 'hsl(var(--category-transport))',
+          entertainment: 'hsl(var(--category-entertainment))',
+          utilities: 'hsl(var(--category-utilities))',
+          dining: 'hsl(var(--category-dining))',
+          other: 'hsl(var(--category-other))',
+        },
         sidebar: {
           DEFAULT: 'hsl(var(--sidebar-background))',
           foreground: 'hsl(var(--sidebar-foreground))',

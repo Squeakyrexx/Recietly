@@ -13,6 +13,7 @@ import { type Category, type SpendingByCategory, CATEGORIES } from '@/lib/types'
 import { Progress } from '../ui/progress';
 import { useAuth } from '@/context/auth-context';
 import { z } from 'zod';
+import { getCategoryBgStyle } from '@/lib/utils';
 
 interface BudgetFormProps {
   initialBudgets: { [key: string]: number };
@@ -77,10 +78,10 @@ export function BudgetForm({ initialBudgets, spendingThisMonth }: BudgetFormProp
     return acc;
   }, {} as { [key: string]: number });
 
-  const getProgressIndicatorClass = (progress: number) => {
+  const getProgressIndicatorClass = (progress: number, category: Category) => {
     if (progress >= 100) return 'bg-destructive';
     if (progress >= 75) return 'bg-warning';
-    return 'bg-primary';
+    return getCategoryBgStyle(category);
   };
 
   return (
@@ -90,7 +91,7 @@ export function BudgetForm({ initialBudgets, spendingThisMonth }: BudgetFormProp
         const budgetAmount = amount || 0;
         const progress = budgetAmount > 0 ? (spent / budgetAmount) * 100 : 0;
         const remaining = budgetAmount - spent;
-        const indicatorClass = getProgressIndicatorClass(progress);
+        const indicatorClass = getProgressIndicatorClass(progress, category as Category);
 
         return (
           <div key={category} className="space-y-3">

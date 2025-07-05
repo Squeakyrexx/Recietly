@@ -5,16 +5,19 @@ import { Badge } from '@/components/ui/badge';
 import { getIconForCategory } from '@/components/icons';
 import { format } from 'date-fns';
 import { FileImage, Briefcase, ClipboardList } from 'lucide-react';
+import { cn } from '@/lib/utils';
+import { getCategoryBorderStyle } from '@/lib/utils';
 
 export function ReceiptCard({ receipt }: { receipt: Receipt }) {
   const Icon = getIconForCategory(receipt.category);
   // By replacing hyphens with slashes, we parse the date in the local timezone,
   // which avoids "off-by-one-day" errors across different timezones.
   const formattedDate = format(new Date(receipt.date.replace(/-/g, '/')), 'MMM d, yyyy');
+  const categoryBorderStyle = getCategoryBorderStyle(receipt.category);
 
 
   return (
-    <Card className="flex flex-col overflow-hidden transition-transform duration-200 hover:scale-105 hover:shadow-lg">
+    <Card className={cn("flex flex-col overflow-hidden transition-transform duration-200 hover:scale-105 hover:shadow-lg border-t-4", categoryBorderStyle)}>
       <CardHeader className="p-0">
         <div className="relative aspect-[4/3] w-full bg-muted">
           {receipt.imageDataUri ? (

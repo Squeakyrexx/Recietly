@@ -4,6 +4,7 @@ import { PiggyBank } from "lucide-react";
 import { Progress } from "../ui/progress";
 import Link from "next/link";
 import { Button } from "../ui/button";
+import { getCategoryBgStyle } from "@/lib/utils";
 
 interface BudgetSummaryProps {
     budgets: { [key in Category]?: number };
@@ -18,7 +19,7 @@ export function BudgetSummary({ budgets, spending }: BudgetSummaryProps) {
 
     const budgetedItems = Object.entries(budgets)
         .filter(([, amount]) => amount !== undefined && amount > 0)
-        .map(([category, budget]) => ({ category, budget: budget! }));
+        .map(([category, budget]) => ({ category: category as Category, budget: budget! }));
 
     if (budgetedItems.length === 0) {
         return (
@@ -39,10 +40,10 @@ export function BudgetSummary({ budgets, spending }: BudgetSummaryProps) {
         )
     }
 
-    const getProgressIndicatorClass = (progress: number) => {
+    const getProgressIndicatorClass = (progress: number, category: Category) => {
         if (progress >= 100) return 'bg-destructive';
         if (progress >= 75) return 'bg-warning';
-        return 'bg-primary';
+        return getCategoryBgStyle(category);
     };
 
     return (
@@ -58,7 +59,7 @@ export function BudgetSummary({ budgets, spending }: BudgetSummaryProps) {
                     {budgetedItems.map(({ category, budget }) => {
                        const spent = spendingMap[category] || 0;
                        const progress = budget > 0 ? (spent / budget) * 100 : 0;
-                       const indicatorClass = getProgressIndicatorClass(progress);
+                       const indicatorClass = getProgressIndicatorClass(progress, category);
                        
                        return (
                         <li key={category} className="space-y-1">

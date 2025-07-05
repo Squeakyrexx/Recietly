@@ -41,6 +41,14 @@
     --sidebar-accent-foreground: 222.2 47.4% 11.2%;
     --sidebar-border: 147 20% 85%;
     --sidebar-ring: 145 62% 30%;
+
+    /* Category Colors - Light Mode */
+    --category-groceries: 217 91% 60%; /* Blue */
+    --category-transport: 35 92% 60%; /* Orange */
+    --category-entertainment: 262 84% 60%; /* Purple */
+    --category-utilities: 180 82% 45%; /* Teal */
+    --category-dining: 0 84% 60%; /* Red */
+    --category-other: 220 13% 69%; /* Gray */
   }
 
   .dark {
@@ -80,6 +88,14 @@
     --sidebar-accent-foreground: 145 10% 90%;
     --sidebar-border: 145 15% 25%;
     --sidebar-ring: 147 50% 47%;
+
+    /* Category Colors - Dark Mode */
+    --category-groceries: 217 91% 70%;
+    --category-transport: 35 92% 70%;
+    --category-entertainment: 262 84% 70%;
+    --category-utilities: 180 82% 55%;
+    --category-dining: 0 84% 70%;
+    --category-other: 220 13% 55%;
   }
 }
 
