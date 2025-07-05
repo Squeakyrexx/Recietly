@@ -7,11 +7,11 @@ export function TotalSpendingCard({ total }: { total: number }) {
   return (
     <Card>
       <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-        <CardTitle className="text-sm font-medium">Total Spending (This Month)</CardTitle>
+        <CardTitle className="text-sm font-medium">Total Spending (All Time)</CardTitle>
         <DollarSign className="h-4 w-4 text-muted-foreground" />
       </CardHeader>
       <CardContent>
-        <div className="text-4xl font-bold">
+        <div className="text-5xl font-bold">
           ${total.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
         </div>
       </CardContent>
@@ -26,7 +26,7 @@ export function TopSpendingCard({ data }: { data: SpendingByCategory[] }) {
         <Card>
             <CardHeader>
                 <CardTitle className="flex items-center gap-2"><TrendingUp className="h-5 w-5"/> Top Categories</CardTitle>
-                <CardDescription>Your biggest spending areas this month.</CardDescription>
+                <CardDescription>Your biggest spending areas of all time.</CardDescription>
             </CardHeader>
             <CardContent>
                {topCategories.length > 0 ? (
@@ -39,16 +39,16 @@ export function TopSpendingCard({ data }: { data: SpendingByCategory[] }) {
                                <Icon className="h-5 w-5 text-muted-foreground"/>
                            </div>
                            <div className="flex-1">
-                               <p className="font-medium">{item.category}</p>
+                               <p className="font-medium text-md">{item.category}</p>
                            </div>
-                           <p className="font-semibold">${item.total.toLocaleString('en-US')}</p>
+                           <p className="font-semibold text-md">${item.total.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</p>
                         </li>
                        )
                     })}
                 </ul>
                ) : (
                 <div className="text-center text-muted-foreground py-4">
-                    No spending recorded this month.
+                    No spending recorded yet.
                 </div>
                )}
             </CardContent>
