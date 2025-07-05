@@ -1,9 +1,30 @@
 'use client';
 
-import { UploadForm } from '@/components/upload/upload-form';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { useAuth } from '@/context/auth-context';
 import { Skeleton } from '@/components/ui/skeleton';
+import dynamic from 'next/dynamic';
+
+// A skeleton loader to show while the UploadForm is loading.
+const UploadFormSkeleton = () => (
+    <div className="space-y-4">
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            <Skeleton className="h-40 rounded-lg" />
+            <Skeleton className="h-40 rounded-lg" />
+        </div>
+        <div className="text-center">
+            <Skeleton className="h-4 w-48 mx-auto" />
+        </div>
+    </div>
+);
+
+// Dynamically import UploadForm and disable Server-Side Rendering (SSR).
+// This ensures the component only renders on the client after authentication is confirmed.
+const UploadForm = dynamic(() => import('@/components/upload/upload-form').then(mod => mod.UploadForm), {
+  ssr: false,
+  loading: () => <UploadFormSkeleton />,
+});
+
 
 export default function UploadPage() {
   const { user, loading } = useAuth();
@@ -23,15 +44,7 @@ export default function UploadPage() {
         </CardHeader>
         <CardContent>
           {loading || !user ? (
-            <div className="space-y-4">
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                  <Skeleton className="h-40 rounded-lg" />
-                  <Skeleton className="h-40 rounded-lg" />
-              </div>
-              <div className="text-center">
-                  <Skeleton className="h-4 w-48 mx-auto" />
-              </div>
-            </div>
+            <UploadFormSkeleton />
           ) : (
             <UploadForm user={user} />
           )}
