@@ -34,6 +34,10 @@ const ExtractReceiptDataOutputSchema = z.object({
   isBusinessExpense: z.boolean().describe('Whether this is likely a business-related expense.'),
   taxCategory: z.enum(TAX_CATEGORIES).optional().describe('If this is a business expense, the specific tax category it falls into. If not a business expense, this should be omitted.'),
   description: z.string().describe('A short, one-sentence summary of the purchase. The description MUST NOT be the same as the category name. For example, if the category is \'Groceries\', a good description is \'Weekly grocery shopping at a supermarket\'.'),
+  items: z.array(z.object({
+    name: z.string().describe('The name of the individual item.'),
+    price: z.number().describe('The price of the item.')
+  })).optional().describe('A list of significant line items from the receipt. Only include up to 5 of the most expensive or important items. If no clear line items are visible, omit this field.'),
 });
 export type ExtractReceiptDataOutput = z.infer<typeof ExtractReceiptDataOutputSchema>;
 
@@ -57,6 +61,7 @@ const AIExtractionPrompt = ai.definePrompt({
   - The date of the transaction in YYYY-MM-DD format.
   - The most appropriate general spending category from the following list: ${CATEGORIES.join(', ')}.
   - A brief, one-sentence summary of the purchase. The description MUST NOT be the same as the category name. For example, if the category is 'Groceries', a good description is 'Weekly grocery shopping at a supermarket'.
+  - A list of up to 5 of the most significant or expensive line items from the receipt, including their name and price. If there are no clear line items, omit the items field.
   - Based on the merchant and items, determine if this is likely a business expense. Set isBusinessExpense to true or false.
   - If you determine this is a business expense, you MUST classify it into one of the following tax categories: ${TAX_CATEGORIES.join(', ')}. If it is not a business expense, you MUST omit the taxCategory field.
 
@@ -91,6 +96,7 @@ const extractReceiptDataFlow = ai.defineFlow(
       description: input.userDescription || aiOutput.description,
       isBusinessExpense: aiOutput.isBusinessExpense,
       taxCategory: aiOutput.taxCategory,
+      items: aiOutput.items,
     };
     
     return finalData;

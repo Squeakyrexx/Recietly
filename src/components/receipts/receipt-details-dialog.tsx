@@ -28,8 +28,8 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Textarea } from '@/components/ui/textarea';
-import { type Receipt, CATEGORIES, TAX_CATEGORIES, TaxCategory } from '@/lib/types';
-import { Loader2, Save, Trash2, Briefcase } from 'lucide-react';
+import { type Receipt, CATEGORIES, TAX_CATEGORIES, TaxCategory, LineItem } from '@/lib/types';
+import { Loader2, Save, Trash2, Briefcase, ClipboardList } from 'lucide-react';
 import { revalidateAllAction } from '@/lib/actions';
 import { updateReceipt, deleteReceipt } from '@/lib/mock-data';
 import { useToast } from '@/hooks/use-toast';
@@ -53,6 +53,10 @@ const receiptSchema = z.object({
   description: z.string().optional(),
   isBusinessExpense: z.boolean().optional(),
   taxCategory: z.enum(TAX_CATEGORIES).optional(),
+  items: z.array(z.object({
+    name: z.string(),
+    price: z.number(),
+  })).optional(),
 });
 
 const updateSchema = z.object({
@@ -88,7 +92,7 @@ export function ReceiptDetailsDialog({
     if (!checked) {
       delete newReceiptData.taxCategory;
     }
-    setEditedReceipt(newReceiptData);
+    setEditedReceipt(newReceiptData as Receipt);
   };
 
   const handleSave = () => {
@@ -227,6 +231,19 @@ export function ReceiptDetailsDialog({
                 onChange={(e) => handleFieldChange('description', e.target.value)}
               />
             </div>
+            {editedReceipt.items && editedReceipt.items.length > 0 && (
+                 <div className="space-y-2">
+                    <Label className="flex items-center gap-2"><ClipboardList className="h-4 w-4" /> Itemization</Label>
+                    <div className="space-y-2 rounded-md border p-3 text-sm max-h-32 overflow-y-auto">
+                        {editedReceipt.items.map((item, index) => (
+                            <div key={index} className="flex justify-between items-center gap-2">
+                                <span className="text-muted-foreground truncate">{item.name}</span>
+                                <span className="font-medium whitespace-nowrap">${item.price.toFixed(2)}</span>
+                            </div>
+                        ))}
+                    </div>
+                </div>
+            )}
             <div className="flex items-center space-x-3 rounded-md border p-3">
               <Briefcase className="h-5 w-5 text-muted-foreground flex-shrink-0" />
               <div className="flex-1">

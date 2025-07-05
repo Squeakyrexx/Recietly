@@ -15,11 +15,11 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Textarea } from '@/components/ui/textarea';
-import { type ExtractedReceiptData, CATEGORIES, TAX_CATEGORIES, type TaxCategory } from '@/lib/types';
-import { Loader2, Save, Briefcase } from 'lucide-react';
+import { type ExtractedReceiptData, CATEGORIES, TAX_CATEGORIES, type TaxCategory, type LineItem } from '@/lib/types';
+import { Loader2, Save, Briefcase, ClipboardList } from 'lucide-react';
 import { Switch } from '@/components/ui/switch';
 
-type EditableReceiptData = ExtractedReceiptData & { isBusinessExpense?: boolean; taxCategory?: TaxCategory };
+type EditableReceiptData = ExtractedReceiptData & { isBusinessExpense?: boolean; taxCategory?: TaxCategory; items?: LineItem[] };
 
 interface ConfirmationDialogProps {
   open: boolean;
@@ -131,6 +131,19 @@ export function ConfirmationDialog({
                 onChange={(e) => handleFieldChange('description', e.target.value)}
               />
             </div>
+            {receiptData.items && receiptData.items.length > 0 && (
+                <div className="space-y-2">
+                    <Label className="flex items-center gap-2"><ClipboardList className="h-4 w-4" /> Key Items</Label>
+                    <div className="space-y-1 rounded-md border p-3 text-sm">
+                        {receiptData.items.map((item, index) => (
+                            <div key={index} className="flex justify-between">
+                                <span className="text-muted-foreground truncate pr-2">{item.name}</span>
+                                <span className="font-medium whitespace-nowrap">${item.price.toFixed(2)}</span>
+                            </div>
+                        ))}
+                    </div>
+                </div>
+            )}
             <div className="flex items-center space-x-3 rounded-md border p-3">
               <Briefcase className="h-5 w-5 text-muted-foreground flex-shrink-0" />
               <div className="flex-1">

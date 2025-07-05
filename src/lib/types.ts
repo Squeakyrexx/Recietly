@@ -17,6 +17,12 @@ export const TAX_CATEGORIES = [
 ] as const;
 export type TaxCategory = (typeof TAX_CATEGORIES)[number];
 
+// New LineItem type
+export type LineItem = {
+  name: string;
+  price: number;
+};
+
 export type Receipt = {
   id: string;
   merchant: string;
@@ -27,6 +33,7 @@ export type Receipt = {
   imageDataUri: string;
   isBusinessExpense: boolean;
   taxCategory?: TaxCategory;
+  items?: LineItem[];
 };
 
 export type SpendingByCategory = {

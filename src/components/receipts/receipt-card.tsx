@@ -4,7 +4,7 @@ import { type Receipt } from '@/lib/types';
 import { Badge } from '@/components/ui/badge';
 import { getIconForCategory } from '@/components/icons';
 import { format } from 'date-fns';
-import { FileImage, Briefcase } from 'lucide-react';
+import { FileImage, Briefcase, ClipboardList } from 'lucide-react';
 
 export function ReceiptCard({ receipt }: { receipt: Receipt }) {
   const Icon = getIconForCategory(receipt.category);
@@ -52,6 +52,11 @@ export function ReceiptCard({ receipt }: { receipt: Receipt }) {
                     <Briefcase className="h-3 w-3" />
                     <span>{receipt.taxCategory || 'Business'}</span>
                 </Badge>
+            )}
+            {receipt.items && receipt.items.length > 0 && (
+                <div className="flex items-center gap-1 text-muted-foreground" title="This receipt is itemized">
+                    <ClipboardList className="h-3 w-3" />
+                </div>
             )}
         </div>
         <time dateTime={receipt.date}>{formattedDate}</time>

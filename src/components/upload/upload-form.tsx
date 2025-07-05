@@ -7,7 +7,7 @@ import { useToast } from '@/hooks/use-toast';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { Camera, Loader2, RefreshCw, Sparkles, Upload, Gem } from 'lucide-react';
-import { type ExtractedReceiptData, CATEGORIES, TAX_CATEGORIES, type TaxCategory } from '@/lib/types';
+import { type ExtractedReceiptData, CATEGORIES, TAX_CATEGORIES, type TaxCategory, type LineItem } from '@/lib/types';
 import Image from 'next/image';
 import { ConfirmationDialog } from './confirmation-dialog';
 import { useRouter } from 'next/navigation';
@@ -17,7 +17,7 @@ import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { Card, CardHeader, CardTitle, CardDescription, CardContent } from '@/components/ui/card';
 import { useAuth } from '@/context/auth-context';
 
-type EditableReceiptData = ExtractedReceiptData & { isBusinessExpense?: boolean; taxCategory?: TaxCategory };
+type EditableReceiptData = ExtractedReceiptData & { isBusinessExpense?: boolean; taxCategory?: TaxCategory; items?: LineItem[] };
 
 const receiptDataSchema = z.object({
   merchant: z.string().min(1, 'Merchant is required.'),
@@ -27,6 +27,10 @@ const receiptDataSchema = z.object({
   description: z.string().optional(),
   isBusinessExpense: z.boolean().optional(),
   taxCategory: z.enum(TAX_CATEGORIES).optional(),
+  items: z.array(z.object({
+    name: z.string(),
+    price: z.number(),
+  })).optional(),
 });
 
 const SCAN_LIMIT = 10;
@@ -207,6 +211,7 @@ export function UploadForm({ user, receiptCount }: { user: User; receiptCount: n
         category: 'Other',
         description: '',
         isBusinessExpense: false,
+        items: [],
     });
     setPreviewUrl(null);
     setPhotoDataUri(null);
