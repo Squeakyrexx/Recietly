@@ -9,6 +9,7 @@ import {
   signInWithEmailAndPassword,
   signOut,
   updateProfile,
+  deleteUser,
   type User,
 } from 'firebase/auth';
 import { app } from '@/lib/firebase';
@@ -25,6 +26,7 @@ interface AuthContextType {
   logout: () => Promise<any>;
   updateUserProfile: (name: string) => Promise<void>;
   upgradeToPro: () => void;
+  deleteUserAccount: () => Promise<void>;
 }
 
 const AuthContext = createContext<AuthContextType>({
@@ -36,6 +38,7 @@ const AuthContext = createContext<AuthContextType>({
   logout: async () => {},
   updateUserProfile: async () => {},
   upgradeToPro: () => {},
+  deleteUserAccount: async () => {},
 });
 
 export const useAuth = () => useContext(AuthContext);
@@ -101,6 +104,32 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     }
   };
 
+  const deleteUserAccount = async () => {
+    const currentUser = auth.currentUser;
+    if (!currentUser) {
+      throw new Error("No user is currently signed in.");
+    }
+    
+    // In a real app, you would have a Cloud Function to delete all user data.
+    // For this prototype, we'll delete the user account and log them out.
+    // Re-authentication might be required for this operation.
+    try {
+      const userId = currentUser.uid;
+      await deleteUser(currentUser);
+      localStorage.removeItem(`premium_${userId}`);
+    } catch (error: any) {
+      console.error("Error deleting user:", error);
+      // Handle cases where re-authentication is needed
+      if (error.code === 'auth/requires-recent-login') {
+        throw new Error("This is a sensitive operation. Please log out and log back in before deleting your account.");
+      }
+      // For the prototype, we can just sign them out on other errors.
+      await signOut(auth);
+      throw new Error('Could not delete account. You have been logged out for security.');
+    }
+  };
+
+
   const value = {
     user,
     loading,
@@ -110,6 +139,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     logout,
     updateUserProfile,
     upgradeToPro,
+    deleteUserAccount,
   };
 
   return (
