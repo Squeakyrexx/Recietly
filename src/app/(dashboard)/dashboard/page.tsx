@@ -13,15 +13,13 @@ import { Skeleton } from '@/components/ui/skeleton';
 
 export default function DashboardPage() {
   const { user } = useAuth();
-  const [loading, setLoading] = useState(true);
-  const [totalSpending, setTotalSpending] = useState(0);
-  const [spendingByCategory, setSpendingByCategory] = useState<SpendingByCategory[]>([]);
-  const [budgets, setBudgets] = useState<{ [key in Category]?: number }>({});
+  const [totalSpending, setTotalSpending] = useState<number | null>(null);
+  const [spendingByCategory, setSpendingByCategory] = useState<SpendingByCategory[] | null>(null);
+  const [budgets, setBudgets] = useState<{ [key in Category]?: number } | null>(null);
 
   useEffect(() => {
     if (user) {
       const fetchData = async () => {
-        setLoading(true);
         const [total, byCategory, budgetData] = await Promise.all([
           getTotalSpending(user.uid, { month: 'current' }),
           getSpendingByCategory(user.uid, { month: 'current' }),
@@ -30,11 +28,12 @@ export default function DashboardPage() {
         setTotalSpending(total);
         setSpendingByCategory(byCategory);
         setBudgets(budgetData);
-        setLoading(false);
       };
       fetchData();
     }
   }, [user]);
+
+  const isLoading = totalSpending === null || spendingByCategory === null || budgets === null;
 
   return (
     <div className="space-y-6">
@@ -43,7 +42,7 @@ export default function DashboardPage() {
         <p className="text-muted-foreground">A summary of your spending habits for this month.</p>
       </header>
       <div className="grid grid-cols-1 gap-6 md:grid-cols-2 lg:grid-cols-3">
-        {loading ? (
+        {isLoading ? (
           <>
             <div className="lg:col-span-1"><Skeleton className="h-32 rounded-lg" /></div>
             <div className="lg:col-span-2"><Skeleton className="h-32 rounded-lg" /></div>
@@ -54,16 +53,16 @@ export default function DashboardPage() {
         ) : (
           <>
             <div className="lg:col-span-1">
-              <TotalSpendingCard total={totalSpending} />
+              <TotalSpendingCard total={totalSpending!} />
             </div>
             <div className="lg:col-span-2">
-              <BudgetSummary budgets={budgets} spending={spendingByCategory} />
+              <BudgetSummary budgets={budgets!} spending={spendingByCategory!} />
             </div>
             <div className="lg:col-span-2">
-              <CategorySpendingChart data={spendingByCategory} />
+              <CategorySpendingChart data={spendingByCategory!} />
             </div>
             <div className="lg:col-span-1">
-              <TopSpendingCard data={spendingByCategory} />
+              <TopSpendingCard data={spendingByCategory!} />
             </div>
             <div className="lg:col-span-3">
               <AiInsights />

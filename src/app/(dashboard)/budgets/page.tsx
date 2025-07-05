@@ -12,13 +12,11 @@ import { Skeleton } from '@/components/ui/skeleton';
 export default function BudgetsPage() {
   const { user } = useAuth();
   const [initialBudgets, setInitialBudgets] = useState<{ [key: string]: number } | null>(null);
-  const [spendingThisMonth, setSpendingThisMonth] = useState<SpendingByCategory[]>([]);
-  const [loading, setLoading] = useState(true);
+  const [spendingThisMonth, setSpendingThisMonth] = useState<SpendingByCategory[] | null>(null);
 
   useEffect(() => {
     if (user) {
       const fetchData = async () => {
-        setLoading(true);
         const [budgetsData, spendingData] = await Promise.all([
           getBudgets(user.uid),
           getSpendingByCategory(user.uid, { month: 'current' }),
@@ -31,11 +29,12 @@ export default function BudgetsPage() {
 
         setInitialBudgets(budgetsWithDefaults);
         setSpendingThisMonth(spendingData);
-        setLoading(false);
       };
       fetchData();
     }
   }, [user]);
+
+  const isLoading = !initialBudgets || !spendingThisMonth;
 
   return (
     <div className="space-y-6 max-w-4xl mx-auto">
@@ -49,7 +48,7 @@ export default function BudgetsPage() {
             <CardDescription>Enter a budget for each category below. Receipts you upload will automatically count towards these budgets each month.</CardDescription>
         </CardHeader>
         <CardContent>
-            {loading || !initialBudgets ? (
+            {isLoading ? (
               <div className="space-y-6">
                 {CATEGORIES.map(cat => (
                   <div key={cat} className="space-y-3">
@@ -64,7 +63,7 @@ export default function BudgetsPage() {
                 ))}
               </div>
             ) : (
-              <BudgetForm initialBudgets={initialBudgets} spendingThisMonth={spendingThisMonth}/>
+              <BudgetForm initialBudgets={initialBudgets!} spendingThisMonth={spendingThisMonth!}/>
             )}
         </CardContent>
       </Card>

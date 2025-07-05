@@ -12,15 +12,12 @@ import { Skeleton } from '@/components/ui/skeleton';
 
 export default function ReceiptsPage() {
   const { user } = useAuth();
-  const [receipts, setReceipts] = useState<Receipt[]>([]);
-  const [loading, setLoading] = useState(true);
+  const [receipts, setReceipts] = useState<Receipt[] | null>(null);
 
   useEffect(() => {
     if (user) {
-      setLoading(true);
       getReceipts(user.uid).then(data => {
         setReceipts(data);
-        setLoading(false);
       });
     }
   }, [user]);
@@ -36,7 +33,7 @@ export default function ReceiptsPage() {
           <Button>Upload New Receipt</Button>
         </Link>
       </header>
-      {loading ? (
+      {receipts === null ? (
         <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4">
           {[...Array(8)].map((_, i) => (
             <Skeleton key={i} className="h-64 rounded-lg" />
