@@ -6,6 +6,7 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/com
 import { Button } from '@/components/ui/button';
 import { Lightbulb, Loader2 } from 'lucide-react';
 import { generateSpendingInsightsAction } from '@/lib/actions';
+import { getReceipts } from '@/lib/mock-data';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { useAuth } from '@/context/auth-context';
 import { useToast } from '@/hooks/use-toast';
@@ -25,11 +26,28 @@ export function AiInsights() {
     startTransition(async () => {
       setError(null);
       setInsight(null);
-      const result = await generateSpendingInsightsAction(user.uid);
-      if (result.error) {
-        setError(result.error);
-      } else if (result.insight) {
-        setInsight(result.insight);
+      try {
+        // 1. Fetch receipts on the client where the user is authenticated
+        const receipts = await getReceipts(user.uid);
+        const spendingData = JSON.stringify(receipts);
+
+        // 2. Call the server action with the data
+        const result = await generateSpendingInsightsAction(spendingData);
+
+        if (result.error) {
+          setError(result.error);
+        } else if (result.insight) {
+          setInsight(result.insight);
+        }
+      } catch (e) {
+          const err = e as Error;
+          console.error("Error generating insights:", err);
+          setError(err.message || "Could not generate insights. Please try again.");
+          toast({
+              title: 'Error',
+              description: err.message || "Could not load your spending data to generate insights.",
+              variant: 'destructive'
+          });
       }
     });
   };

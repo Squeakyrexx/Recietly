@@ -5,17 +5,24 @@ import { useState, useTransition } from 'react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { setBudgetAction } from '@/lib/actions';
+import { revalidateAllAction } from '@/lib/actions';
+import { setBudget } from '@/lib/mock-data';
 import { useToast } from '@/hooks/use-toast';
 import { Loader2, Save } from 'lucide-react';
-import { type Category, type SpendingByCategory } from '@/lib/types';
+import { type Category, type SpendingByCategory, CATEGORIES } from '@/lib/types';
 import { Progress } from '../ui/progress';
 import { useAuth } from '@/context/auth-context';
+import { z } from 'zod';
 
 interface BudgetFormProps {
   initialBudgets: { [key: string]: number };
   spendingThisMonth: SpendingByCategory[];
 }
+
+const budgetSchema = z.object({
+    category: z.enum(CATEGORIES),
+    amount: z.coerce.number().min(0, 'Budget amount cannot be negative.')
+});
 
 export function BudgetForm({ initialBudgets, spendingThisMonth }: BudgetFormProps) {
   const [budgets, setBudgets] = useState(initialBudgets);
@@ -35,24 +42,33 @@ export function BudgetForm({ initialBudgets, spendingThisMonth }: BudgetFormProp
         return;
     }
     const amount = budgets[category];
+    const validation = budgetSchema.safeParse({ category, amount });
+
+    if (!validation.success) {
+        toast({ title: 'Invalid Input', description: validation.error.errors.map(e => e.message).join(', '), variant: 'destructive' });
+        return;
+    }
 
     setPendingSaves((prev) => ({ ...prev, [category]: true }));
 
     startTransition(async () => {
-      const result = await setBudgetAction(user.uid, { category, amount });
-      if (result.success) {
+      try {
+        await setBudget(user.uid, validation.data);
+        await revalidateAllAction();
         toast({
           title: 'Budget Saved',
           description: `Your budget for ${category} has been updated.`,
         });
-      } else {
+      } catch (e) {
+        const err = e as Error;
         toast({
           title: 'Error',
-          description: result.message,
+          description: err.message || "Could not save budget.",
           variant: 'destructive',
         });
+      } finally {
+        setPendingSaves((prev) => ({ ...prev, [category]: false }));
       }
-      setPendingSaves((prev) => ({ ...prev, [category]: false }));
     });
   };
 

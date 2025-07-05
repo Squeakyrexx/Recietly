@@ -2,19 +2,31 @@
 'use client';
 
 import { useRef, useState, useTransition } from 'react';
-import { extractReceiptDataAction, saveReceiptAction } from '@/lib/actions';
+import { extractReceiptDataAction, revalidateAllAction } from '@/lib/actions';
+import { addReceipt } from '@/lib/mock-data';
 import { useToast } from '@/hooks/use-toast';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Button } from '@/components/ui/button';
 import { Camera, Image as ImageIcon, Loader2, X } from 'lucide-react';
-import { type ExtractedReceiptData } from '@/lib/types';
+import { type ExtractedReceiptData, CATEGORIES } from '@/lib/types';
 import Image from 'next/image';
 import { ConfirmationDialog } from './confirmation-dialog';
 import { useRouter } from 'next/navigation';
 import type { User } from 'firebase/auth';
+import { z } from 'zod';
 
 type EditableReceiptData = ExtractedReceiptData & { isBusinessExpense?: boolean };
+
+const receiptDataSchema = z.object({
+  merchant: z.string().min(1, 'Merchant is required.'),
+  amount: z.coerce.number().positive('Amount must be positive.'),
+  date: z.string().min(1, 'Date is required.'),
+  category: z.enum(CATEGORIES),
+  description: z.string().optional(),
+  isBusinessExpense: z.boolean().optional(),
+});
+
 
 export function UploadForm({ user }: { user: User }) {
   const [isExtracting, startExtractionTransition] = useTransition();
@@ -82,19 +94,37 @@ export function UploadForm({ user }: { user: User }) {
         return;
     };
     
+    const validated = receiptDataSchema.safeParse(receiptData);
+
+    if (!validated.success) {
+      const errorMessages = validated.error.errors.map(e => e.message).join(', ');
+      toast({ success: false, title: 'Invalid Data', description: errorMessages, variant: 'destructive' });
+      return;
+    }
+
     startSavingTransition(async () => {
-        const result = await saveReceiptAction({ userId: user.uid, receiptData, photoDataUri });
-        if (result.success) {
+        try {
+            const receiptToSave = {
+                ...validated.data,
+                description: validated.data.description || '', // Ensure description is a string
+            };
+
+            const imageDataUri = photoDataUri || `https://placehold.co/600x400.png`;
+            
+            await addReceipt(user.uid, { ...receiptToSave, imageDataUri });
+            await revalidateAllAction();
+
             toast({
                 title: 'Success!',
-                description: result.message,
+                description: "Receipt saved successfully!",
             });
             resetForm();
             router.push('/receipts');
-        } else {
+        } catch (e) {
+            const err = e as Error;
             toast({
                 title: 'Error Saving',
-                description: result.message,
+                description: err.message || "An unexpected error occurred.",
                 variant: 'destructive',
             });
         }

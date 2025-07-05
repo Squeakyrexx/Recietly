@@ -30,10 +30,12 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Textarea } from '@/components/ui/textarea';
 import { type Receipt, CATEGORIES } from '@/lib/types';
 import { Loader2, Save, Trash2, Briefcase } from 'lucide-react';
-import { updateReceiptAction, deleteReceiptAction } from '@/lib/actions';
+import { revalidateAllAction } from '@/lib/actions';
+import { updateReceipt, deleteReceipt } from '@/lib/mock-data';
 import { useToast } from '@/hooks/use-toast';
 import { useAuth } from '@/context/auth-context';
 import { Switch } from '../ui/switch';
+import { z } from 'zod';
 
 interface ReceiptDetailsDialogProps {
   open: boolean;
@@ -42,6 +44,20 @@ interface ReceiptDetailsDialogProps {
   onReceiptUpdate: (updatedReceipt: Receipt) => void;
   onReceiptDelete: (deletedReceiptId: string) => void;
 }
+
+const receiptSchema = z.object({
+  merchant: z.string().min(1, 'Merchant is required.'),
+  amount: z.coerce.number().positive('Amount must be positive.'),
+  date: z.string().min(1, 'Date is required.'),
+  category: z.enum(CATEGORIES),
+  description: z.string().optional(),
+  isBusinessExpense: z.boolean().optional(),
+});
+
+const updateSchema = z.object({
+    id: z.string(),
+    imageDataUri: z.string(),
+}).merge(receiptSchema);
 
 export function ReceiptDetailsDialog({
   open,
@@ -69,19 +85,36 @@ export function ReceiptDetailsDialog({
   const handleSave = () => {
     if (!editedReceipt || !user) return;
     
+    const validation = updateSchema.safeParse(editedReceipt);
+    if (!validation.success) {
+      toast({
+        title: 'Invalid Data',
+        description: validation.error.errors.map(e => e.message).join(', '),
+        variant: 'destructive'
+      });
+      return;
+    }
+    
+    const receiptToUpdate = {
+        ...validation.data,
+        description: validation.data.description || '',
+    };
+
     startSavingTransition(async () => {
-      const result = await updateReceiptAction(user.uid, editedReceipt);
-      if (result.success) {
+      try {
+        await updateReceipt(user.uid, receiptToUpdate);
+        await revalidateAllAction();
         toast({
           title: 'Success!',
-          description: result.message,
+          description: 'Receipt updated successfully!',
         });
-        onReceiptUpdate(editedReceipt);
+        onReceiptUpdate(receiptToUpdate);
         onOpenChange(false);
-      } else {
+      } catch (e) {
+        const err = e as Error;
         toast({
           title: 'Error Saving',
-          description: result.message,
+          description: err.message || 'Could not update receipt.',
           variant: 'destructive',
         });
       }
@@ -92,17 +125,19 @@ export function ReceiptDetailsDialog({
     if (!editedReceipt || !user) return;
     
     startDeletingTransition(async () => {
-      const result = await deleteReceiptAction(user.uid, editedReceipt.id);
-      if (result.success) {
+      try {
+        await deleteReceipt(user.uid, editedReceipt.id);
+        await revalidateAllAction();
         toast({
           title: 'Receipt Deleted',
         });
         onReceiptDelete(editedReceipt.id);
         onOpenChange(false);
-      } else {
+      } catch (e) {
+        const err = e as Error;
         toast({
           title: 'Error Deleting',
-          description: result.message,
+          description: err.message || 'Could not delete receipt.',
           variant: 'destructive',
         });
       }

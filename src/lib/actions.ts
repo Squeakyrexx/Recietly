@@ -3,11 +3,9 @@
 
 import { extractReceiptData as extractReceiptDataFlow } from '@/ai/flows/extract-receipt-data';
 import { generateSpendingInsights as generateSpendingInsightsFlow } from '@/ai/flows/generate-spending-insights';
-import { addReceipt, getReceipts, updateReceipt, deleteReceipt, setBudget } from '@/lib/mock-data';
 import { revalidatePath } from 'next/cache';
-import { z } from 'zod';
-import { type ExtractedReceiptData, CATEGORIES, type Receipt, type Category } from './types';
 
+// This action is fine as it only uses Genkit and does not interact with Firestore.
 export async function extractReceiptDataAction({photoDataUri}: {photoDataUri: string}) {
   if (!photoDataUri) {
     return {
@@ -41,93 +39,13 @@ export async function extractReceiptDataAction({photoDataUri}: {photoDataUri: st
   }
 }
 
-const receiptDataSchema = z.object({
-  merchant: z.string().min(1, 'Merchant is required.'),
-  amount: z.coerce.number().positive('Amount must be positive.'),
-  date: z.string().min(1, 'Date is required.'),
-  category: z.enum(CATEGORIES),
-  description: z.string().optional(),
-  isBusinessExpense: z.boolean().optional(),
-});
-
-export async function saveReceiptAction({ userId, receiptData, photoDataUri }: { userId: string, receiptData: ExtractedReceiptData & { isBusinessExpense?: boolean }, photoDataUri: string | null }) {
-  if (!userId) return { success: false, message: 'You must be logged in to save a receipt.'};
-  
-  const validated = receiptDataSchema.safeParse(receiptData);
-
-  if (!validated.success) {
-    const errorMessages = validated.error.errors.map(e => e.message).join(', ');
-    return { success: false, message: `Invalid data: ${errorMessages}` };
+// This action is now modified to accept spending data directly,
+// instead of fetching it from Firestore on the server.
+export async function generateSpendingInsightsAction(spendingData: string) {
+  if (!spendingData || spendingData === '[]') {
+      return { insight: "You don't have any spending data yet. Upload some receipts to get started!", error: null };
   }
-  
-  const receiptToSave = {
-    ...validated.data,
-    description: validated.data.description || '', // Ensure description is a string
-  }
-
-  // Use a placeholder if no image was provided (manual entry)
-  const imageDataUri = photoDataUri || `https://placehold.co/600x400.png`;
-  
-  await addReceipt(userId, { ...receiptToSave, imageDataUri });
-  
-  // Revalidate the entire app to ensure all pages get fresh data
-  revalidatePath('/', 'layout');
-
-  return { success: true, message: 'Receipt saved successfully!' };
-}
-
-const updateSchema = z.object({
-    id: z.string(),
-    imageDataUri: z.string(),
-    isBusinessExpense: z.boolean().optional(),
-}).merge(receiptDataSchema);
-
-
-export async function updateReceiptAction(userId: string, receiptData: Receipt) {
-  if (!userId) return { success: false, message: 'You must be logged in to update a receipt.'};
-
-  const validated = updateSchema.safeParse(receiptData);
-
-  if (!validated.success) {
-    const errorMessages = validated.error.errors.map(e => e.message).join(', ');
-    return { success: false, message: `Invalid data: ${errorMessages}` };
-  }
-  
-  const receiptToUpdate = {
-    ...validated.data,
-    description: validated.data.description || '',
-  }
-  
-  await updateReceipt(userId, receiptToUpdate);
-  
-  // Revalidate the entire app to ensure all pages get fresh data
-  revalidatePath('/', 'layout');
-
-  return { success: true, message: 'Receipt updated successfully!' };
-}
-
-export async function deleteReceiptAction(userId: string, id: string) {
-    if (!userId) return { success: false, message: 'You must be logged in to delete a receipt.'};
-    if (!id) {
-        return { success: false, message: 'No ID provided for deletion.' };
-    }
-    await deleteReceipt(userId, id);
-    
-    // Revalidate the entire app to ensure all pages get fresh data
-    revalidatePath('/', 'layout');
-
-    return { success: true, message: 'Receipt deleted.' };
-}
-
-
-export async function generateSpendingInsightsAction(userId: string) {
-  if (!userId) return { insight: null, error: 'You must be logged in.'};
   try {
-    const receipts = await getReceipts(userId);
-    if (receipts.length === 0) {
-        return { insight: "You don't have any spending data yet. Upload some receipts to get started!", error: null };
-    }
-    const spendingData = JSON.stringify(receipts);
     const result = await generateSpendingInsightsFlow({ spendingData });
     return { insight: result.insights, error: null };
   } catch (error) {
@@ -136,25 +54,7 @@ export async function generateSpendingInsightsAction(userId: string) {
   }
 }
 
-const budgetSchema = z.object({
-    category: z.enum(CATEGORIES),
-    amount: z.coerce.number().min(0, 'Budget amount cannot be negative.')
-});
-
-export async function setBudgetAction(userId: string, { category, amount }: { category: Category, amount: number }) {
-    if (!userId) return { success: false, message: 'You must be logged in.'};
-    
-    const validated = budgetSchema.safeParse({ category, amount });
-
-    if (!validated.success) {
-        const errorMessages = validated.error.errors.map(e => e.message).join(', ');
-        return { success: false, message: `Invalid data: ${errorMessages}` };
-    }
-
-    await setBudget(userId, validated.data);
-    
-    // Revalidate the entire app to ensure all pages get fresh data
-    revalidatePath('/', 'layout');
-    
-    return { success: true, message: 'Budget updated!' };
+// This new, dedicated action handles cache revalidation from the client.
+export async function revalidateAllAction() {
+  revalidatePath('/', 'layout');
 }
