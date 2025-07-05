@@ -32,7 +32,10 @@ export function AiInsights({ receiptsForInsight }: { receiptsForInsight: Receipt
       setError(null);
       setInsight(null);
       try {
-        const spendingData = JSON.stringify(receiptsForInsight);
+        // We need to remove the image data before sending it to the AI.
+        // It's very large and not needed for this flow, and can cause errors.
+        const dataForInsight = receiptsForInsight.map(({ imageDataUri, ...rest }) => rest);
+        const spendingData = JSON.stringify(dataForInsight);
         const result = await generateSpendingInsightsAction(spendingData);
 
         if (result.error) {
