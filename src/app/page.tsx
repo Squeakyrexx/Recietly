@@ -11,7 +11,7 @@ export default function LandingPage() {
         <div className="container flex h-16 items-center">
           <Link href="/" className="flex items-center gap-2 font-bold">
             <Logo className="h-8 w-8 text-primary" />
-            <span className="text-xl font-semibold">ReceiptWise</span>
+            <span className="text-xl font-semibold">Recietly</span>
           </Link>
           <nav className="ml-auto flex items-center gap-2">
             <Button variant="ghost" asChild>
@@ -33,7 +33,7 @@ export default function LandingPage() {
                 Turn Receipts into Insights, Instantly.
               </h1>
               <p className="max-w-2xl mx-auto text-lg text-muted-foreground md:text-xl">
-                Snap, upload, and let our AI do the rest. ReceiptWise effortlessly transforms your paper and digital receipts into organized, actionable financial data.
+                Snap, upload, and let our AI do the rest. Recietly effortlessly transforms your paper and digital receipts into organized, actionable financial data.
               </p>
               <div className="flex justify-center gap-4">
                 <Button size="lg" asChild>
@@ -50,7 +50,7 @@ export default function LandingPage() {
                 <div className="space-y-6">
                     <h2 className="text-3xl font-bold tracking-tight">Effortless Expense Management</h2>
                     <p className="text-lg text-muted-foreground">
-                        Say goodbye to manual data entry. With ReceiptWise, you get a crystal-clear overview of your finances. Set budgets, categorize spending, and identify savings opportunities with our intelligent dashboard.
+                        Say goodbye to manual data entry. With Recietly, you get a crystal-clear overview of your finances. Set budgets, categorize spending, and identify savings opportunities with our intelligent dashboard.
                     </p>
                     <ul className="space-y-3 text-foreground">
                         <li className="flex items-center gap-3"><CheckCircle className="h-5 w-5 text-primary" /> AI-Powered Data Extraction</li>
@@ -102,7 +102,7 @@ export default function LandingPage() {
 
       <footer className="border-t bg-card">
         <div className="container py-8 text-center text-sm text-muted-foreground">
-          &copy; {new Date().getFullYear()} ReceiptWise. All rights reserved.
+          &copy; {new Date().getFullYear()} Recietly. All rights reserved.
         </div>
       </footer>
     </div>

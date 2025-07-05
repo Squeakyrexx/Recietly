@@ -58,7 +58,7 @@ export function SidebarNav() {
       <SidebarHeader>
         <div className="flex items-center gap-2">
           <Logo className="h-8 w-8 text-primary" />
-          <span className="text-xl font-semibold">ReceiptWise</span>
+          <span className="text-xl font-semibold">Recietly</span>
           <div className="ml-auto">
              <SidebarTrigger />
           </div>

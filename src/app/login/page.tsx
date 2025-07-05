@@ -43,7 +43,7 @@ export default function LoginPage() {
         <div className="flex flex-col items-center text-center">
             <Logo className="h-12 w-12 text-primary mb-4" />
             <h1 className="text-3xl font-bold tracking-tight">Welcome Back!</h1>
-            <p className="text-muted-foreground">Sign in to continue to ReceiptWise.</p>
+            <p className="text-muted-foreground">Sign in to continue to Recietly.</p>
         </div>
         <Card>
           <CardHeader>

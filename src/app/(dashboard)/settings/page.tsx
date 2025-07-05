@@ -36,7 +36,7 @@ export default function SettingsPage() {
         <CardHeader className="md:flex-row md:items-center md:justify-between">
           <div>
             <CardTitle className="flex items-center gap-2 text-2xl">
-              <Gem className="h-6 w-6 text-primary"/> ReceiptWise Pro
+              <Gem className="h-6 w-6 text-primary"/> Recietly Pro
             </CardTitle>
             <CardDescription>
               Supercharge your financial tracking with premium features.
