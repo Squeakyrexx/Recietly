@@ -8,10 +8,11 @@ import {
   createUserWithEmailAndPassword,
   signInWithEmailAndPassword,
   signOut,
+  updateProfile,
   type User,
 } from 'firebase/auth';
 import { app } from '@/lib/firebase';
-import { Loader2 } from 'lucide-react';
+import { revalidateAllAction } from '@/lib/actions';
 
 const auth = getAuth(app);
 
@@ -19,7 +20,7 @@ interface AuthContextType {
   user: User | null;
   loading: boolean;
   login: (email: string, pass: string) => Promise<any>;
-  signup: (email: string, pass: string) => Promise<any>;
+  signup: (email: string, pass: string, name: string) => Promise<any>;
   logout: () => Promise<any>;
 }
 
@@ -46,8 +47,17 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     return () => unsubscribe();
   }, []);
 
-  const signup = (email: string, password: string) => {
-    return createUserWithEmailAndPassword(auth, email, password);
+  const signup = async (email: string, password: string, name: string) => {
+    const userCredential = await createUserWithEmailAndPassword(auth, email, password);
+    if (userCredential.user) {
+      await updateProfile(userCredential.user, {
+        displayName: name,
+      });
+      // Force a user state update to reflect the new display name immediately
+      setUser({ ...userCredential.user, displayName: name });
+      await revalidateAllAction();
+    }
+    return userCredential;
   };
 
   const login = (email: string, password: string) => {

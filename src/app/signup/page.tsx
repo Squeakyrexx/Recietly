@@ -14,6 +14,7 @@ import Link from 'next/link';
 import { Logo } from '@/components/icons';
 
 export default function SignupPage() {
+  const [name, setName] = useState('');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [loading, setLoading] = useState(false);
@@ -25,7 +26,7 @@ export default function SignupPage() {
     e.preventDefault();
     setLoading(true);
     try {
-      await signup(email, password);
+      await signup(email, password, name);
       toast({
         title: 'Account Created!',
         description: "You've been successfully signed up.",
@@ -52,10 +53,20 @@ export default function SignupPage() {
         <Card>
           <CardHeader>
             <CardTitle>Sign Up</CardTitle>
-            <CardDescription>Enter your email and password to create an account.</CardDescription>
+            <CardDescription>Enter your details to create an account.</CardDescription>
           </CardHeader>
           <CardContent>
             <form onSubmit={handleSubmit} className="space-y-4">
+              <div className="space-y-2">
+                <Label htmlFor="name">Full Name</Label>
+                <Input
+                  id="name"
+                  placeholder="John Doe"
+                  value={name}
+                  onChange={(e) => setName(e.target.value)}
+                  required
+                />
+              </div>
               <div className="space-y-2">
                 <Label htmlFor="email">Email</Label>
                 <Input

@@ -26,6 +26,7 @@ import {
   PiggyBank,
   LogOut,
 } from 'lucide-react';
+import type { User } from 'firebase/auth';
 
 const navItems = [
   { href: '/dashboard', icon: LayoutDashboard, label: 'Dashboard' },
@@ -45,8 +46,11 @@ export function SidebarNav() {
     router.push('/login');
   };
   
-  const getAvatarFallback = (email: string) => {
-    return email ? email[0].toUpperCase() : 'U';
+  const getAvatarFallback = (user: User | null) => {
+    if (!user) return 'U';
+    if (user.displayName) return user.displayName[0].toUpperCase();
+    if (user.email) return user.email[0].toUpperCase();
+    return 'U';
   }
 
   return (
@@ -93,7 +97,7 @@ export function SidebarNav() {
         <div className="flex items-center gap-2 p-2">
           <Avatar className="h-8 w-8">
             <AvatarImage src={user?.photoURL || "https://placehold.co/100x100.png"} alt="User" />
-            <AvatarFallback>{user?.email ? getAvatarFallback(user.email) : 'U'}</AvatarFallback>
+            <AvatarFallback>{getAvatarFallback(user)}</AvatarFallback>
           </Avatar>
           <div className="flex flex-col truncate">
             <span className="text-sm font-medium truncate">{user?.displayName || 'User'}</span>
