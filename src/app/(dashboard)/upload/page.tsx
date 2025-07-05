@@ -5,6 +5,9 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { useAuth } from '@/context/auth-context';
 import { Skeleton } from '@/components/ui/skeleton';
 import dynamic from 'next/dynamic';
+import { listenToReceipts } from '@/lib/mock-data';
+import type { Receipt } from '@/lib/types';
+import { useToast } from '@/hooks/use-toast';
 
 // A skeleton loader to show while the UploadForm is loading.
 const UploadFormSkeleton = () => (
@@ -29,11 +32,33 @@ const UploadForm = dynamic(() => import('@/components/upload/upload-form').then(
 
 export default function UploadPage() {
   const { user, loading } = useAuth();
+  const { toast } = useToast();
+  const [receiptCount, setReceiptCount] = useState<number | null>(null);
   const [isClientReady, setIsClientReady] = useState(false);
 
   useEffect(() => {
     setIsClientReady(true);
   }, []);
+
+  useEffect(() => {
+    if (loading || !user) {
+        setReceiptCount(null);
+        return;
+    }
+    const unsubscribe = listenToReceipts(user.uid, (receipts) => {
+        setReceiptCount(receipts.length);
+    }, (error) => {
+        console.error("Failed to fetch receipt count:", error);
+        toast({
+            title: 'Error Loading Data',
+            description: 'Could not verify your upload limit. Please try again later.',
+            variant: 'destructive'
+        });
+    });
+    return () => unsubscribe();
+  }, [user, loading, toast]);
+  
+  const pageIsLoading = loading || !isClientReady || receiptCount === null;
   
   return (
     <div className="mx-auto max-w-2xl space-y-6">
@@ -50,10 +75,10 @@ export default function UploadPage() {
           </CardDescription>
         </CardHeader>
         <CardContent>
-          {loading || !isClientReady ? (
+          {pageIsLoading ? (
             <UploadFormSkeleton />
           ) : user ? (
-            <UploadForm user={user} />
+            <UploadForm user={user} receiptCount={receiptCount!} />
           ) : (
             <div className="text-center p-8 space-y-4 text-muted-foreground">
                 <p>Please log in to upload receipts.</p>

@@ -19,19 +19,23 @@ const auth = getAuth(app);
 interface AuthContextType {
   user: User | null;
   loading: boolean;
+  isPremium: boolean;
   login: (email: string, pass: string) => Promise<any>;
   signup: (email: string, pass: string, name: string) => Promise<any>;
   logout: () => Promise<any>;
   updateUserProfile: (name: string) => Promise<void>;
+  upgradeToPro: () => void;
 }
 
 const AuthContext = createContext<AuthContextType>({
   user: null,
   loading: true,
+  isPremium: false,
   login: async () => {},
   signup: async () => {},
   logout: async () => {},
   updateUserProfile: async () => {},
+  upgradeToPro: () => {},
 });
 
 export const useAuth = () => useContext(AuthContext);
@@ -39,10 +43,18 @@ export const useAuth = () => useContext(AuthContext);
 export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [user, setUser] = useState<User | null>(null);
   const [loading, setLoading] = useState(true);
+  const [isPremium, setIsPremium] = useState(false);
 
   useEffect(() => {
     const unsubscribe = onAuthStateChanged(auth, (user) => {
       setUser(user);
+      if (user) {
+        // Check local storage for premium status when user logs in
+        const premiumStatus = localStorage.getItem(`premium_${user.uid}`);
+        setIsPremium(premiumStatus === 'true');
+      } else {
+        setIsPremium(false);
+      }
       setLoading(false);
     });
 
@@ -81,14 +93,23 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     setUser(auth.currentUser);
     await revalidateAllAction();
   };
+  
+  const upgradeToPro = () => {
+    if (user) {
+        localStorage.setItem(`premium_${user.uid}`, 'true');
+        setIsPremium(true);
+    }
+  };
 
   const value = {
     user,
     loading,
+    isPremium,
     signup,
     login,
     logout,
     updateUserProfile,
+    upgradeToPro,
   };
 
   return (

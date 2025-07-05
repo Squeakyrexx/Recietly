@@ -10,7 +10,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Button } from '@/components/ui/button';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow, TableFooter } from '@/components/ui/table';
-import { Download, Loader2 } from 'lucide-react';
+import { Download, Loader2, Gem } from 'lucide-react';
 import { Skeleton } from '@/components/ui/skeleton';
 
 interface ReportRow {
@@ -19,8 +19,27 @@ interface ReportRow {
   total: number;
 }
 
+const PremiumUpgradePrompt = () => {
+    const { upgradeToPro } = useAuth();
+    return (
+        <Card>
+            <CardHeader className="items-center text-center">
+                 <Gem className="h-12 w-12 text-primary mb-4" />
+                <CardTitle>Unlock Tax Reporting with Pro</CardTitle>
+                <CardDescription>This feature is only available to Recietly Pro members.</CardDescription>
+            </CardHeader>
+            <CardContent className="text-center">
+                <p className="text-muted-foreground mb-4">Upgrade your account to generate tax-ready expense reports, export your data, and get more powerful AI insights.</p>
+                <Button onClick={upgradeToPro} size="lg">
+                    Upgrade to Pro
+                </Button>
+            </CardContent>
+        </Card>
+    )
+}
+
 export default function TaxReportPage() {
-  const { user, loading } = useAuth();
+  const { user, loading, isPremium } = useAuth();
   const { toast } = useToast();
   
   const [allReceipts, setAllReceipts] = useState<Receipt[] | null>(null);
@@ -67,7 +86,7 @@ export default function TaxReportPage() {
   }, [reportData]);
 
   useEffect(() => {
-    if (loading || !user) {
+    if (loading || !user || !isPremium) {
         setAllReceipts(null);
         return;
     }
@@ -82,7 +101,7 @@ export default function TaxReportPage() {
     });
     
     return () => unsubscribe();
-  }, [user, loading, toast]);
+  }, [user, loading, toast, isPremium]);
 
   const handleExport = () => {
     if (!reportData || reportData.length === 0) {
@@ -116,7 +135,7 @@ export default function TaxReportPage() {
     document.body.removeChild(link);
   };
 
-  const isLoading = allReceipts === null;
+  const isLoading = (loading || (isPremium && allReceipts === null));
 
   return (
     <div className="space-y-6 max-w-4xl mx-auto">
@@ -124,6 +143,14 @@ export default function TaxReportPage() {
         <h1 className="font-headline text-3xl font-bold tracking-tight">Tax Report</h1>
         <p className="text-muted-foreground">A summary of your business expenses for tax purposes.</p>
       </header>
+      { isLoading ? (
+        <Card>
+            <CardHeader><Skeleton className="h-8 w-48" /></CardHeader>
+            <CardContent><Skeleton className="h-64 w-full" /></CardContent>
+        </Card>
+      ) : !isPremium ? (
+        <PremiumUpgradePrompt />
+      ) : (
       <Card>
         <CardHeader className="flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
             <div>
@@ -148,15 +175,7 @@ export default function TaxReportPage() {
             </div>
         </CardHeader>
         <CardContent>
-            {isLoading ? (
-                <div className="space-y-2">
-                    <Skeleton className="h-10 w-full" />
-                    {[...Array(5)].map((_, i) => (
-                        <Skeleton key={i} className="h-12 w-full" />
-                    ))}
-                    <Skeleton className="h-12 w-full mt-2" />
-                </div>
-            ) : reportData && reportData.length > 0 ? (
+            {reportData && reportData.length > 0 ? (
                 <Table>
                     <TableHeader>
                         <TableRow>
@@ -189,6 +208,7 @@ export default function TaxReportPage() {
             )}
         </CardContent>
       </Card>
+      )}
     </div>
   );
 }

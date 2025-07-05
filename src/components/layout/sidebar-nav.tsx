@@ -40,7 +40,7 @@ const navItems = [
 
 export function SidebarNav() {
   const pathname = usePathname();
-  const { user, logout } = useAuth();
+  const { user, logout, isPremium } = useAuth();
   const router = useRouter();
 
   const handleLogout = async () => {
@@ -81,21 +81,23 @@ export function SidebarNav() {
         </SidebarMenu>
       </SidebarContent>
       <SidebarFooter className="gap-4">
-        <Card className="bg-primary/10 text-center">
-            <CardHeader className="p-4">
-                <CardTitle className="text-base flex items-center justify-center gap-2">
-                    <Gem className="text-primary"/> Upgrade to Pro
-                </CardTitle>
-                <CardDescription>
-                    Unlock advanced features and get unlimited receipt uploads.
-                </CardDescription>
-            </CardHeader>
-            <CardContent className="p-4 pt-0">
-                <Link href="/settings">
-                    <Button className="w-full" size="sm">Upgrade</Button>
-                </Link>
-            </CardContent>
-        </Card>
+        {!isPremium && (
+            <Card className="bg-primary/10 text-center">
+                <CardHeader className="p-4">
+                    <CardTitle className="text-base flex items-center justify-center gap-2">
+                        <Gem className="text-primary"/> Upgrade to Pro
+                    </CardTitle>
+                    <CardDescription>
+                        Unlock advanced features and get unlimited receipt uploads.
+                    </CardDescription>
+                </CardHeader>
+                <CardContent className="p-4 pt-0">
+                    <Link href="/settings">
+                        <Button className="w-full" size="sm">Upgrade</Button>
+                    </Link>
+                </CardContent>
+            </Card>
+        )}
         <div className="flex items-center gap-2 p-2">
           <Avatar className="h-8 w-8">
             <AvatarImage src={user?.photoURL || "https://placehold.co/100x100.png"} alt="User" />

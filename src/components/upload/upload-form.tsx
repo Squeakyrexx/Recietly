@@ -6,7 +6,7 @@ import { addReceipt } from '@/lib/mock-data';
 import { useToast } from '@/hooks/use-toast';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
-import { Camera, Loader2, RefreshCw, Sparkles, Upload } from 'lucide-react';
+import { Camera, Loader2, RefreshCw, Sparkles, Upload, Gem } from 'lucide-react';
 import { type ExtractedReceiptData, CATEGORIES, TAX_CATEGORIES, type TaxCategory } from '@/lib/types';
 import Image from 'next/image';
 import { ConfirmationDialog } from './confirmation-dialog';
@@ -14,7 +14,8 @@ import { useRouter } from 'next/navigation';
 import type { User } from 'firebase/auth';
 import { z } from 'zod';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
-import { Card } from '@/components/ui/card';
+import { Card, CardHeader, CardTitle, CardDescription, CardContent } from '@/components/ui/card';
+import { useAuth } from '@/context/auth-context';
 
 type EditableReceiptData = ExtractedReceiptData & { isBusinessExpense?: boolean; taxCategory?: TaxCategory };
 
@@ -28,12 +29,14 @@ const receiptDataSchema = z.object({
   taxCategory: z.enum(TAX_CATEGORIES).optional(),
 });
 
+const SCAN_LIMIT = 10;
 
-export function UploadForm({ user }: { user: User }) {
+export function UploadForm({ user, receiptCount }: { user: User; receiptCount: number }) {
   const [isExtracting, startExtractionTransition] = useTransition();
   const [isSaving, startSavingTransition] = useTransition();
   const { toast } = useToast();
   const router = useRouter();
+  const { isPremium, upgradeToPro } = useAuth();
   
   const [previewUrl, setPreviewUrl] = useState<string | null>(null);
   const [photoDataUri, setPhotoDataUri] = useState<string | null>(null);
@@ -209,6 +212,34 @@ export function UploadForm({ user }: { user: User }) {
     setPhotoDataUri(null);
     setIsConfirming(true);
   };
+  
+  const handleUpgrade = () => {
+    upgradeToPro();
+    toast({
+        title: 'Upgrade Successful!',
+        description: 'You now have access to all Recietly Pro features.',
+    });
+  };
+
+  const limitReached = !isPremium && receiptCount >= SCAN_LIMIT;
+
+  if (limitReached) {
+      return (
+        <Card className="border-primary/50 text-center">
+            <CardHeader>
+                <div className="mx-auto bg-primary/10 p-4 rounded-full w-fit">
+                    <Gem className="h-8 w-8 text-primary"/>
+                </div>
+                <CardTitle>Free Limit Reached</CardTitle>
+                <CardDescription>You've used {receiptCount} of your {SCAN_LIMIT} free receipt scans.</CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-4">
+                <p className="text-muted-foreground">To continue scanning unlimited receipts and unlock other Pro features like tax reporting, please upgrade your account.</p>
+                <Button onClick={handleUpgrade} size="lg">Upgrade to Pro</Button>
+            </CardContent>
+        </Card>
+      );
+  }
 
   return (
     <>

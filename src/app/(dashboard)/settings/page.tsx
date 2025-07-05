@@ -10,7 +10,7 @@ import { useAuth } from '@/context/auth-context';
 import { useToast } from '@/hooks/use-toast';
 
 export default function SettingsPage() {
-  const { user, updateUserProfile } = useAuth();
+  const { user, updateUserProfile, isPremium, upgradeToPro } = useAuth();
   const { toast } = useToast();
   const [isSaving, startSavingTransition] = useTransition();
 
@@ -44,6 +44,14 @@ export default function SettingsPage() {
     });
   };
 
+  const handleUpgrade = () => {
+    upgradeToPro();
+    toast({
+        title: 'Upgrade Successful!',
+        description: 'You now have access to all Recietly Pro features.',
+    });
+  }
+
   return (
     <div className="space-y-8 max-w-4xl mx-auto">
       <div>
@@ -74,36 +82,37 @@ export default function SettingsPage() {
         </CardContent>
       </Card>
 
-      <Card className="bg-gradient-to-br from-primary/10 to-accent/10">
-        <CardHeader className="md:flex-row md:items-center md:justify-between">
-          <div>
-            <CardTitle className="flex items-center gap-2 text-2xl">
-              <Gem className="h-6 w-6 text-primary"/> Recietly Pro
-            </CardTitle>
-            <CardDescription>
-              Supercharge your financial tracking with premium features.
-            </CardDescription>
-          </div>
-          <Button size="lg" className="mt-4 md:mt-0">Upgrade Now</Button>
-        </CardHeader>
-        <CardContent>
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 text-sm">
-            <div className="flex items-start gap-2">
-              <CheckCircle className="h-5 w-5 text-primary mt-0.5 flex-shrink-0" />
-              <span><strong>Unlimited</strong> receipt uploads and storage.</span>
+      {!isPremium && (
+        <Card className="bg-gradient-to-br from-primary/10 to-accent/10">
+          <CardHeader className="md:flex-row md:items-center md:justify-between">
+            <div>
+              <CardTitle className="flex items-center gap-2 text-2xl">
+                <Gem className="h-6 w-6 text-primary"/> Recietly Pro
+              </CardTitle>
+              <CardDescription>
+                Supercharge your financial tracking with premium features.
+              </CardDescription>
             </div>
-            <div className="flex items-start gap-2">
-              <CheckCircle className="h-5 w-5 text-primary mt-0.5 flex-shrink-0" />
-              <span><strong>Advanced AI insights</strong> and trend analysis.</span>
-            </div>
-            <div className="flex items-start gap-2">
-              <CheckCircle className="h-5 w-5 text-primary mt-0.5 flex-shrink-0" />
-              <span>Export data to CSV and connect to accounting software.</span>
-            </div>
-            <div className="flex items-start gap-2">
-              <CheckCircle className="h-5 w-5 text-primary mt-0.5 flex-shrink-0" />
-              <span>Create <strong>custom spending categories</strong>.</span>
-            </div>
+            <Button size="lg" className="mt-4 md:mt-0" onClick={handleUpgrade}>Upgrade Now</Button>
+          </CardHeader>
+          <CardContent>
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 text-sm">
+              <div className="flex items-start gap-2">
+                <CheckCircle className="h-5 w-5 text-primary mt-0.5 flex-shrink-0" />
+                <span><strong>Unlimited</strong> receipt uploads and storage.</span>
+              </div>
+              <div className="flex items-start gap-2">
+                <CheckCircle className="h-5 w-5 text-primary mt-0.5 flex-shrink-0" />
+                <span><strong>Advanced AI insights</strong> and trend analysis.</span>
+              </div>
+              <div className="flex items-start gap-2">
+                <CheckCircle className="h-5 w-5 text-primary mt-0.5 flex-shrink-0" />
+                <span>Export data to CSV and connect to accounting software.</span>
+              </div>
+              <div className="flex items-start gap-2">
+                <CheckCircle className="h-5 w-5 text-primary mt-0.5 flex-shrink-0" />
+                <span>Create <strong>custom spending categories</strong>.</span>
+              </div>
              <div className="flex items-start gap-2">
               <CheckCircle className="h-5 w-5 text-primary mt-0.5 flex-shrink-0" />
               <span>Set and track <strong>monthly budgets</strong>.</span>
@@ -115,6 +124,7 @@ export default function SettingsPage() {
           </div>
         </CardContent>
       </Card>
+      )}
     </div>
   );
 }
