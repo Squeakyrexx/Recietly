@@ -1,10 +1,51 @@
+
+'use client';
+
+import { useState, useEffect, useTransition } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Gem, CheckCircle } from "lucide-react";
+import { Gem, CheckCircle, Loader2 } from "lucide-react";
+import { useAuth } from '@/context/auth-context';
+import { useToast } from '@/hooks/use-toast';
+
 
 export default function SettingsPage() {
+  const { user, updateUserProfile } = useAuth();
+  const { toast } = useToast();
+  const [isSaving, startSavingTransition] = useTransition();
+
+  const [name, setName] = useState('');
+  const [email, setEmail] = useState('');
+
+  useEffect(() => {
+    if (user) {
+      setName(user.displayName || '');
+      setEmail(user.email || '');
+    }
+  }, [user]);
+
+  const handleSave = () => {
+    if (!user) return;
+    
+    startSavingTransition(async () => {
+      try {
+        await updateUserProfile(name);
+        toast({
+          title: 'Profile Updated',
+          description: 'Your changes have been saved successfully.',
+        });
+      } catch (error: any) {
+        toast({
+          title: 'Error',
+          description: error.message || 'Failed to update profile.',
+          variant: 'destructive',
+        });
+      }
+    });
+  };
+
   return (
     <div className="space-y-8 max-w-4xl mx-auto">
       <div>
@@ -21,14 +62,17 @@ export default function SettingsPage() {
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div className="space-y-2">
               <Label htmlFor="name">Full Name</Label>
-              <Input id="name" defaultValue="Demo User" />
+              <Input id="name" value={name} onChange={(e) => setName(e.target.value)} disabled={isSaving}/>
             </div>
             <div className="space-y-2">
               <Label htmlFor="email">Email Address</Label>
-              <Input id="email" type="email" defaultValue="user@example.com" />
+              <Input id="email" type="email" value={email} disabled />
             </div>
           </div>
-          <Button>Save Changes</Button>
+          <Button onClick={handleSave} disabled={isSaving || !name}>
+            {isSaving && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+            Save Changes
+          </Button>
         </CardContent>
       </Card>
 

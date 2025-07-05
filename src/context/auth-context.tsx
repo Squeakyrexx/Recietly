@@ -22,6 +22,7 @@ interface AuthContextType {
   login: (email: string, pass: string) => Promise<any>;
   signup: (email: string, pass: string, name: string) => Promise<any>;
   logout: () => Promise<any>;
+  updateUserProfile: (name: string) => Promise<void>;
 }
 
 const AuthContext = createContext<AuthContextType>({
@@ -30,6 +31,7 @@ const AuthContext = createContext<AuthContextType>({
   login: async () => {},
   signup: async () => {},
   logout: async () => {},
+  updateUserProfile: async () => {},
 });
 
 export const useAuth = () => useContext(AuthContext);
@@ -68,12 +70,25 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     return signOut(auth);
   };
 
+  const updateUserProfile = async (name: string) => {
+    if (!auth.currentUser) {
+      throw new Error("No user is currently signed in.");
+    }
+    await updateProfile(auth.currentUser, {
+        displayName: name,
+    });
+    // Update local state to immediately reflect the change
+    setUser(auth.currentUser);
+    await revalidateAllAction();
+  };
+
   const value = {
     user,
     loading,
     signup,
     login,
     logout,
+    updateUserProfile,
   };
 
   return (
