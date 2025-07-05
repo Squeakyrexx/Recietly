@@ -6,7 +6,7 @@ export default {
   darkMode: ['class'],
   safelist: [
     ...categoryColors.map((color) => `bg-category-${color}`),
-    ...categoryColors.map((color) => `border-t-category-${color}`),
+    ...categoryColors.map((color) => `border-category-${color}`),
     'bg-warning',
     'bg-destructive',
   ],

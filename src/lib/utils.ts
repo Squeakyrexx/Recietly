@@ -31,7 +31,7 @@ export function getCategoryColor(category: Category): string {
 
 export function getCategoryBorderStyle(category: Category): string {
     const color = categoryColorMap[category] || categoryColorMap.Other;
-    return `border-t-${color}`;
+    return `border-${color}`;
 }
 
 export function getCategoryBgStyle(category: Category): string {
