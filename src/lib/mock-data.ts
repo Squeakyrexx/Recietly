@@ -1,3 +1,4 @@
+
 import {
   collection,
   query,
@@ -15,10 +16,12 @@ import { db } from './firebase';
 import { type Receipt, type SpendingByCategory, type Category, CATEGORIES } from '@/lib/types';
 
 // NOTE: All functions now require a userId to operate on user-specific data.
-// The hardcoded 'demo-user' has been removed.
 
 export const getReceipts = async (userId: string): Promise<Receipt[]> => {
-  if (!userId) return [];
+  if (!userId) {
+    console.error("getReceipts called without a userId.");
+    return [];
+  };
   const receiptsCollection = collection(db, 'users', userId, 'receipts');
   const q = query(receiptsCollection, orderBy('date', 'desc'));
   const querySnapshot = await getDocs(q);
@@ -30,7 +33,9 @@ export const getReceipts = async (userId: string): Promise<Receipt[]> => {
 };
 
 export const addReceipt = async (userId: string, receipt: Omit<Receipt, 'id'>) => {
-  if (!userId) throw new Error('User not authenticated');
+  if (!userId) {
+    throw new Error('User not authenticated. Cannot add receipt.');
+  }
   const d = new Date(receipt.date.replace(/-/g, '/'));
   const isValidDate = !isNaN(d.getTime());
 
@@ -44,20 +49,27 @@ export const addReceipt = async (userId: string, receipt: Omit<Receipt, 'id'>) =
 };
 
 export const updateReceipt = async (userId: string, updatedReceipt: Receipt) => {
-  if (!userId) throw new Error('User not authenticated');
+  if (!userId) {
+    throw new Error('User not authenticated. Cannot update receipt.');
+  }
   const receiptDoc = doc(db, 'users', userId, 'receipts', updatedReceipt.id);
   const { id, ...data } = updatedReceipt;
   await updateDoc(receiptDoc, data);
 };
 
 export const deleteReceipt = async (userId: string, id: string) => {
-  if (!userId) throw new Error('User not authenticated');
+  if (!userId) {
+    throw new Error('User not authenticated. Cannot delete receipt.');
+  }
   const receiptDoc = doc(db, 'users', userId, 'receipts', id);
   await deleteDoc(receiptDoc);
 };
 
 export const getSpendingByCategory = async (userId: string, { month }: { month: 'current' | 'all' }): Promise<SpendingByCategory[]> => {
-  if (!userId) return [];
+  if (!userId) {
+    console.error("getSpendingByCategory called without a userId.");
+    return [];
+  };
   const spendingMap: { [key: string]: number } = {};
   
   let receiptsToProcess = await getReceipts(userId);
@@ -87,7 +99,10 @@ export const getSpendingByCategory = async (userId: string, { month }: { month: 
 };
 
 export const getTotalSpending = async (userId: string, { month }: { month: 'current' | 'all' }): Promise<number> => {
-    if (!userId) return 0;
+    if (!userId) {
+      console.error("getTotalSpending called without a userId.");
+      return 0;
+    };
     let receiptsToProcess = await getReceipts(userId);
     if (month === 'current') {
         const now = new Date();
@@ -102,7 +117,10 @@ export const getTotalSpending = async (userId: string, { month }: { month: 'curr
 };
 
 export const getBudgets = async (userId: string): Promise<{ [key in Category]?: number }> => {
-    if (!userId) return {};
+    if (!userId) {
+      console.error("getBudgets called without a userId.");
+      return {};
+    };
     const budgetsDocRef = doc(db, 'users', userId, 'budgets', 'data');
     const docSnap = await getDoc(budgetsDocRef);
     if (docSnap.exists()) {
@@ -114,7 +132,9 @@ export const getBudgets = async (userId: string): Promise<{ [key in Category]?: 
 }
 
 export const setBudget = async (userId: string, { category, amount }: { category: Category, amount: number }) => {
-    if (!userId) throw new Error('User not authenticated');
+    if (!userId) {
+      throw new Error('User not authenticated. Cannot set budget.');
+    }
     const budgetsDocRef = doc(db, 'users', userId, 'budgets', 'data');
     // We use setDoc with merge: true to create or update the document
     await setDoc(budgetsDocRef, { [category]: amount }, { merge: true });
