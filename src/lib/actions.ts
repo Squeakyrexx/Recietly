@@ -44,11 +44,11 @@ export async function extractReceiptDataAction({photoDataUri}: {photoDataUri: st
 // instead of fetching it from Firestore on the server.
 export async function generateSpendingInsightsAction(spendingData: string) {
   if (!spendingData || spendingData === '[]') {
-      return { insight: "You don't have any spending data yet. Upload some receipts to get started!", error: null };
+      return { insight: null, error: "There is no spending data in this period to analyze." };
   }
   try {
     const result = await generateSpendingInsightsFlow({ spendingData });
-    return { insight: result.insights, error: null };
+    return { insight: result, error: null };
   } catch (error) {
     console.error(error);
     return { insight: null, error: 'Failed to generate insights. Please try again.' };
