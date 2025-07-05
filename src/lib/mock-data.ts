@@ -200,11 +200,13 @@ export const listenToReceipts = (
     const receipts: Receipt[] = [];
     querySnapshot.forEach((doc) => {
       const data = doc.data();
-      // Ensure amount is always a number right after fetching
+      // Sanitize amount on read to prevent calculation errors.
+      // This converts any value to a number, and treats invalid numbers (NaN) as 0.
+      const amount = Number(data.amount);
       const receipt: Receipt = {
         id: doc.id,
         merchant: data.merchant,
-        amount: Number(data.amount || 0),
+        amount: isNaN(amount) ? 0 : amount,
         date: data.date,
         category: data.category,
         description: data.description,
