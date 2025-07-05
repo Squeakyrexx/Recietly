@@ -16,6 +16,7 @@ import { z } from 'zod';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { Card, CardHeader, CardTitle, CardDescription, CardContent } from '@/components/ui/card';
 import { useAuth } from '@/context/auth-context';
+import { Separator } from '@/components/ui/separator';
 
 type EditableReceiptData = ExtractedReceiptData & { isBusinessExpense?: boolean; taxCategory?: TaxCategory; items?: LineItem[] };
 
@@ -33,7 +34,6 @@ const receiptDataSchema = z.object({
   })).optional(),
 });
 
-// User request: set limit to 10.
 const SCAN_LIMIT = 10;
 
 // New type for staged files
@@ -273,7 +273,7 @@ export function UploadForm({ user, receiptCount }: { user: User; receiptCount: n
                 <CardDescription>You've used {receiptCount} of your {SCAN_LIMIT} free receipt scans.</CardDescription>
             </CardHeader>
             <CardContent className="space-y-4">
-                <p className="text-muted-foreground">To continue scanning unlimited receipts and unlock other Pro features like tax reporting, please upgrade your account.</p>
+                <p className="text-muted-foreground">To continue scanning unlimited receipts and unlock other Pro features, please upgrade your account.</p>
                 <Button onClick={handleUpgrade} size="lg">Upgrade to Pro</Button>
             </CardContent>
         </Card>
@@ -297,7 +297,7 @@ export function UploadForm({ user, receiptCount }: { user: User; receiptCount: n
         onSave={handleSave}
         isSaving={isSaving}
       />
-      <div className="space-y-4">
+      <div className="space-y-6">
         <canvas ref={canvasRef} className="hidden" />
 
         {/* STAGING AREA */}
@@ -336,55 +336,54 @@ export function UploadForm({ user, receiptCount }: { user: User; receiptCount: n
                     <Trash2 className="mr-2 h-4 w-4"/> Clear All
                 </Button>
             </div>
+            <Separator />
           </div>
         )}
 
-        {/* UPLOAD VIEW (shown when staging is empty) */}
-        {stagedFiles.length === 0 && (
-          <div className="space-y-4">
+        {/* UPLOAD VIEW - always visible now */}
+        <div className="space-y-4">
             <Card className="relative aspect-video w-full overflow-hidden flex items-center justify-center bg-black">
-              <video ref={videoRef} className="w-full h-full object-cover" autoPlay muted playsInline />
-              {hasCameraPermission === false && (
-                <div className="absolute inset-0 flex flex-col items-center justify-center bg-black/80 text-white p-4">
-                  <Camera className="h-12 w-12 text-muted-foreground mb-4" />
-                  <Alert variant="destructive" className="text-destructive-foreground border-destructive/50 bg-destructive/80">
-                      <AlertTitle>Camera Access Denied</AlertTitle>
-                      <AlertDescription>
-                        Enable camera permissions in your browser to use this feature.
-                        You can still upload a file from your library.
-                      </AlertDescription>
-                  </Alert>
-                </div>
-              )}
-               {hasCameraPermission === null && (
-                 <div className="absolute inset-0 flex items-center justify-center bg-black/50">
-                    <Loader2 className="h-8 w-8 animate-spin text-white"/>
-                 </div>
-               )}
+                <video ref={videoRef} className="w-full h-full object-cover" autoPlay muted playsInline />
+                {hasCameraPermission === false && (
+                    <div className="absolute inset-0 flex flex-col items-center justify-center bg-black/80 text-white p-4">
+                    <Camera className="h-12 w-12 text-muted-foreground mb-4" />
+                    <Alert variant="destructive" className="text-destructive-foreground border-destructive/50 bg-destructive/80">
+                        <AlertTitle>Camera Access Denied</AlertTitle>
+                        <AlertDescription>
+                            Enable camera permissions in your browser to use this feature.
+                            You can still upload a file from your library.
+                        </AlertDescription>
+                    </Alert>
+                    </div>
+                )}
+                {hasCameraPermission === null && (
+                    <div className="absolute inset-0 flex items-center justify-center bg-black/50">
+                        <Loader2 className="h-8 w-8 animate-spin text-white"/>
+                    </div>
+                )}
             </Card>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <Button onClick={handleSnapPhoto} disabled={!hasCameraPermission} size="lg">
-                <Camera className="mr-2 h-4 w-4" /> Snap Photo
-              </Button>
-              
-              <Button variant="secondary" size="lg" onClick={() => chooseFileInputRef.current?.click()}>
-                 <Upload className="mr-2 h-4 w-4" /> Upload from Library
-              </Button>
-              <Input
-                id="choose-file"
-                type="file"
-                className="sr-only"
-                accept="image/*"
-                multiple // Allow multiple file selection
-                onChange={handleFileChange}
-                ref={chooseFileInputRef}
-              />
+                <Button onClick={handleSnapPhoto} disabled={!hasCameraPermission} size="lg">
+                    <Camera className="mr-2 h-4 w-4" /> Snap Photo
+                </Button>
+                
+                <Button variant="secondary" size="lg" onClick={() => chooseFileInputRef.current?.click()}>
+                    <Upload className="mr-2 h-4 w-4" /> Upload from Library
+                </Button>
+                <Input
+                    id="choose-file"
+                    type="file"
+                    className="sr-only"
+                    accept="image/*"
+                    multiple // Allow multiple file selection
+                    onChange={handleFileChange}
+                    ref={chooseFileInputRef}
+                />
             </div>
             <p className="text-sm text-center text-muted-foreground">
                 No photo? <Button variant="link" onClick={handleManualEntry} className="p-0 h-auto">Enter details manually</Button>.
             </p>
-          </div>
-        )}
+        </div>
       </div>
     </>
   );
