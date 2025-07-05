@@ -8,7 +8,7 @@ export default function LandingPage() {
   return (
     <div className="flex flex-col min-h-screen bg-background text-foreground">
       <header className="sticky top-0 z-50 w-full border-b border-border/40 bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
-        <div className="container flex h-16 items-center">
+        <div className="container mx-auto flex h-16 items-center px-4">
           <Link href="/" className="flex items-center gap-2 font-bold">
             <Logo className="h-8 w-8 text-primary" />
             <span className="text-xl font-semibold">Recietly</span>
@@ -27,7 +27,7 @@ export default function LandingPage() {
       <main className="flex-1">
         {/* Hero Section */}
         <section className="w-full py-24 sm:py-32">
-          <div className="container flex flex-col items-center text-center">
+          <div className="container mx-auto flex flex-col items-center px-4 text-center">
             <div className="max-w-4xl space-y-6">
               <h1 className="font-headline text-4xl font-bold tracking-tight text-primary sm:text-5xl md:text-6xl">
                 Turn Receipts into Insights, Instantly.
@@ -46,7 +46,7 @@ export default function LandingPage() {
 
         {/* Visual Feature Callout */}
         <section className="w-full py-24 sm:py-32 bg-card border-y">
-            <div className="container grid grid-cols-1 md:grid-cols-2 gap-12 items-center">
+            <div className="container mx-auto grid grid-cols-1 md:grid-cols-2 gap-12 items-center px-4">
                 <div className="space-y-6">
                     <h2 className="text-3xl font-bold tracking-tight">Your Finances, Finally Organized.</h2>
                     <p className="text-lg text-muted-foreground">
@@ -67,7 +67,7 @@ export default function LandingPage() {
 
         {/* Feature Sections */}
         <section className="w-full py-24 sm:py-32">
-          <div className="container flex flex-col items-center">
+          <div className="container mx-auto flex flex-col items-center px-4">
             <div className="max-w-2xl text-center mb-16">
               <h2 className="text-3xl font-bold tracking-tight">How It Works</h2>
               <p className="mt-4 text-lg text-muted-foreground">Get started in minutes and see your financial picture come into focus.</p>
@@ -101,7 +101,7 @@ export default function LandingPage() {
       </main>
 
       <footer className="w-full border-t bg-card">
-        <div className="container py-8 text-center text-sm text-muted-foreground">
+        <div className="container mx-auto py-8 text-center text-sm text-muted-foreground">
           &copy; {new Date().getFullYear()} Recietly. All rights reserved.
         </div>
       </footer>
