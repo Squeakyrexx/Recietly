@@ -1,5 +1,7 @@
+
 'use client';
 
+import { useState, useEffect } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { useAuth } from '@/context/auth-context';
 import { Skeleton } from '@/components/ui/skeleton';
@@ -19,7 +21,7 @@ const UploadFormSkeleton = () => (
 );
 
 // Dynamically import UploadForm and disable Server-Side Rendering (SSR).
-// This ensures the component only renders on the client after authentication is confirmed.
+// This ensures the component only renders on the client.
 const UploadForm = dynamic(() => import('@/components/upload/upload-form').then(mod => mod.UploadForm), {
   ssr: false,
   loading: () => <UploadFormSkeleton />,
@@ -28,6 +30,13 @@ const UploadForm = dynamic(() => import('@/components/upload/upload-form').then(
 
 export default function UploadPage() {
   const { user, loading } = useAuth();
+  const [isClientReady, setIsClientReady] = useState(false);
+
+  // This effect runs only on the client, after the component has fully mounted.
+  // This is a key part of the fix to prevent race conditions.
+  useEffect(() => {
+    setIsClientReady(true);
+  }, []);
 
   return (
     <div className="mx-auto max-w-2xl space-y-6">
@@ -43,7 +52,8 @@ export default function UploadPage() {
           </CardDescription>
         </CardHeader>
         <CardContent>
-          {loading || !user ? (
+          {/* We now wait for auth loading, a user, AND the client to be ready. */}
+          {loading || !user || !isClientReady ? (
             <UploadFormSkeleton />
           ) : (
             <UploadForm user={user} />
