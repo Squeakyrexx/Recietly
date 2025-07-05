@@ -7,7 +7,7 @@ import { useToast } from '@/hooks/use-toast';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { Camera, Loader2, RefreshCw, Sparkles, Upload } from 'lucide-react';
-import { type ExtractedReceiptData, CATEGORIES, TaxCategory } from '@/lib/types';
+import { type ExtractedReceiptData, CATEGORIES, TAX_CATEGORIES, type TaxCategory } from '@/lib/types';
 import Image from 'next/image';
 import { ConfirmationDialog } from './confirmation-dialog';
 import { useRouter } from 'next/navigation';
