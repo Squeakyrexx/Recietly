@@ -27,13 +27,13 @@ export default function LandingPage() {
       <main className="flex-1">
         {/* Hero Section */}
         <section className="py-24 sm:py-32">
-          <div className="container text-center">
-            <div className="mx-auto max-w-4xl space-y-6">
+          <div className="container flex flex-col items-center text-center">
+            <div className="max-w-4xl space-y-6">
               <h1 className="font-headline text-4xl font-bold tracking-tight text-primary sm:text-5xl md:text-6xl">
                 Turn Receipts into Insights, Instantly.
               </h1>
               <p className="max-w-2xl mx-auto text-lg text-muted-foreground md:text-xl">
-                Snap, upload, and let our AI do the rest. Recietly effortlessly transforms your paper and digital receipts into organized, actionable financial data.
+                Stop saving crumpled receipts. Recietly uses AI to automatically digitize, categorize, and analyze your spending, giving you a clear view of your financial life.
               </p>
               <div className="flex justify-center gap-4">
                 <Button size="lg" asChild>
@@ -48,51 +48,51 @@ export default function LandingPage() {
         <section className="py-24 sm:py-32 bg-card border-y">
             <div className="container grid grid-cols-1 md:grid-cols-2 gap-16 items-center">
                 <div className="space-y-6">
-                    <h2 className="text-3xl font-bold tracking-tight">Effortless Expense Management</h2>
+                    <h2 className="text-3xl font-bold tracking-tight">Your Finances, Finally Organized.</h2>
                     <p className="text-lg text-muted-foreground">
-                        Say goodbye to manual data entry. With Recietly, you get a crystal-clear overview of your finances. Set budgets, categorize spending, and identify savings opportunities with our intelligent dashboard.
+                        Go from a shoebox of receipts to a clear, interactive dashboard. Recietly doesn't just store your expenses—it helps you understand them. Track spending against budgets, discover trends, and get AI-powered insights to help you save.
                     </p>
                     <ul className="space-y-3 text-foreground">
-                        <li className="flex items-center gap-3"><CheckCircle className="h-5 w-5 text-primary" /> AI-Powered Data Extraction</li>
-                        <li className="flex items-center gap-3"><CheckCircle className="h-5 w-5 text-primary" /> Smart Spending Categorization</li>
-                        <li className="flex items-center gap-3"><CheckCircle className="h-5 w-5 text-primary" /> Monthly Budget Tracking</li>
-                        <li className="flex items-center gap-3"><CheckCircle className="h-5 w-5 text-primary" /> Actionable Financial Insights</li>
+                        <li className="flex items-center gap-3"><CheckCircle className="h-5 w-5 text-primary" /> Instant AI-powered receipt capture.</li>
+                        <li className="flex items-center gap-3"><CheckCircle className="h-5 w-5 text-primary" /> Automatic expense categorization.</li>
+                        <li className="flex items-center gap-3"><CheckCircle className="h-5 w-5 text-primary" /> Intelligent budgeting and progress tracking.</li>
+                        <li className="flex items-center gap-3"><CheckCircle className="h-5 w-5 text-primary" /> Tax-ready reporting for business expenses.</li>
                     </ul>
                 </div>
                 <div className="relative aspect-video rounded-lg shadow-2xl bg-muted p-2 ring-1 ring-inset ring-primary/10">
-                    <Image src="https://placehold.co/600x400.png" data-ai-hint="dashboard screen" alt="App dashboard screenshot" fill className="object-cover rounded-md" />
+                    <Image src="https://placehold.co/600x400.png" data-ai-hint="app dashboard" alt="A screenshot of the Recietly application dashboard showing charts and spending summaries." fill className="object-cover rounded-md" />
                 </div>
             </div>
         </section>
 
         {/* Feature Sections */}
         <section className="py-24 sm:py-32">
-          <div className="container">
-            <div className="mx-auto max-w-2xl text-center mb-16">
-              <h2 className="text-3xl font-bold tracking-tight">A Simple Process to Financial Clarity</h2>
-              <p className="mt-4 text-lg text-muted-foreground">Just three simple steps stand between you and a smarter way to manage expenses.</p>
+          <div className="container flex flex-col items-center">
+            <div className="max-w-2xl text-center mb-16">
+              <h2 className="text-3xl font-bold tracking-tight">How It Works</h2>
+              <p className="mt-4 text-lg text-muted-foreground">Get started in minutes and see your financial picture come into focus.</p>
             </div>
             <div className="grid grid-cols-1 md:grid-cols-3 gap-8 text-center">
               <div className="flex flex-col items-center p-8 bg-card rounded-xl shadow-sm border">
                 <div className="p-4 rounded-full bg-primary/10 mb-6">
                   <CloudUpload className="h-10 w-10 text-primary" />
                 </div>
-                <h3 className="text-xl font-semibold mb-2">1. Upload</h3>
-                <p className="text-muted-foreground">Snap a photo of your receipt or upload a file. Our system accepts various formats for your convenience.</p>
+                <h3 className="text-xl font-semibold mb-2">1. Snap or Upload</h3>
+                <p className="text-muted-foreground">Use our camera-first interface to instantly capture a receipt, or upload an existing file.</p>
               </div>
               <div className="flex flex-col items-center p-8 bg-card rounded-xl shadow-sm border">
                 <div className="p-4 rounded-full bg-primary/10 mb-6">
                   <Bot className="h-10 w-10 text-primary" />
                 </div>
-                <h3 className="text-xl font-semibold mb-2">2. Analyze</h3>
-                <p className="text-muted-foreground">Our AI instantly extracts key information: merchant, date, amount, and suggests a category.</p>
+                <h3 className="text-xl font-semibold mb-2">2. Review & Confirm</h3>
+                <p className="text-muted-foreground">Our AI extracts the merchant, amount, and date. Simply confirm the details are correct.</p>
               </div>
               <div className="flex flex-col items-center p-8 bg-card rounded-xl shadow-sm border">
                 <div className="p-4 rounded-full bg-primary/10 mb-6">
                   <BarChart className="h-10 w-10 text-primary" />
                 </div>
-                <h3 className="text-xl font-semibold mb-2">3. Track</h3>
-                <p className="text-muted-foreground">View your spending on the dashboard, track budgets, and gain valuable insights into your financial habits.</p>
+                <h3 className="text-xl font-semibold mb-2">3. Track & Analyze</h3>
+                <p className="text-muted-foreground">View your spending on the dashboard, track budgets, and gain valuable insights into your habits.</p>
               </div>
             </div>
           </div>
