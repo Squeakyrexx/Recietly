@@ -1,3 +1,4 @@
+
 'use client';
 
 import Image from 'next/image';
@@ -18,6 +19,9 @@ import { Textarea } from '@/components/ui/textarea';
 import { type ExtractedReceiptData, CATEGORIES, TAX_CATEGORIES, type TaxCategory, type LineItem } from '@/lib/types';
 import { Loader2, Save, Briefcase, ClipboardList } from 'lucide-react';
 import { Switch } from '@/components/ui/switch';
+import { ScrollArea } from '@/components/ui/scroll-area';
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
+
 
 type EditableReceiptData = ExtractedReceiptData & { isBusinessExpense?: boolean; taxCategory?: TaxCategory; items?: LineItem[] };
 
@@ -132,17 +136,27 @@ export function ConfirmationDialog({
               />
             </div>
             {receiptData.items && receiptData.items.length > 0 && (
-                <div className="space-y-2">
-                    <Label className="flex items-center gap-2"><ClipboardList className="h-4 w-4" /> Key Items</Label>
-                    <div className="space-y-1 rounded-md border p-3 text-sm">
-                        {receiptData.items.map((item, index) => (
-                            <div key={index} className="flex justify-between">
-                                <span className="text-muted-foreground truncate pr-2">{item.name}</span>
-                                <span className="font-medium whitespace-nowrap">${item.price.toFixed(2)}</span>
-                            </div>
-                        ))}
-                    </div>
-                </div>
+              <div className="space-y-2">
+                  <Label className="flex items-center gap-2"><ClipboardList className="h-4 w-4" /> Key Items</Label>
+                  <ScrollArea className="h-32 rounded-md border">
+                  <Table>
+                      <TableHeader>
+                          <TableRow>
+                              <TableHead>Item</TableHead>
+                              <TableHead className="text-right">Price</TableHead>
+                          </TableRow>
+                      </TableHeader>
+                      <TableBody>
+                          {receiptData.items.map((item, index) => (
+                              <TableRow key={index}>
+                                  <TableCell className="font-medium truncate">{item.name}</TableCell>
+                                  <TableCell className="text-right">${item.price.toFixed(2)}</TableCell>
+                              </TableRow>
+                          ))}
+                      </TableBody>
+                  </Table>
+                  </ScrollArea>
+              </div>
             )}
             <div className="flex items-center space-x-3 rounded-md border p-3">
               <Briefcase className="h-5 w-5 text-muted-foreground flex-shrink-0" />

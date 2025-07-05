@@ -36,6 +36,8 @@ import { useToast } from '@/hooks/use-toast';
 import { useAuth } from '@/context/auth-context';
 import { Switch } from '../ui/switch';
 import { z } from 'zod';
+import { ScrollArea } from '../ui/scroll-area';
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '../ui/table';
 
 interface ReceiptDetailsDialogProps {
   open: boolean;
@@ -232,16 +234,26 @@ export function ReceiptDetailsDialog({
               />
             </div>
             {editedReceipt.items && editedReceipt.items.length > 0 && (
-                 <div className="space-y-2">
+                <div className="space-y-2">
                     <Label className="flex items-center gap-2"><ClipboardList className="h-4 w-4" /> Itemization</Label>
-                    <div className="space-y-2 rounded-md border p-3 text-sm max-h-32 overflow-y-auto">
+                    <ScrollArea className="h-40 rounded-md border">
+                    <Table>
+                        <TableHeader>
+                        <TableRow>
+                            <TableHead>Item</TableHead>
+                            <TableHead className="text-right">Price</TableHead>
+                        </TableRow>
+                        </TableHeader>
+                        <TableBody>
                         {editedReceipt.items.map((item, index) => (
-                            <div key={index} className="flex justify-between items-center gap-2">
-                                <span className="text-muted-foreground truncate">{item.name}</span>
-                                <span className="font-medium whitespace-nowrap">${item.price.toFixed(2)}</span>
-                            </div>
+                            <TableRow key={index}>
+                            <TableCell className="font-medium truncate">{item.name}</TableCell>
+                            <TableCell className="text-right">${item.price.toFixed(2)}</TableCell>
+                            </TableRow>
                         ))}
-                    </div>
+                        </TableBody>
+                    </Table>
+                    </ScrollArea>
                 </div>
             )}
             <div className="flex items-center space-x-3 rounded-md border p-3">
