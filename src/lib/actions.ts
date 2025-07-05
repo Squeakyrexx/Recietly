@@ -3,10 +3,8 @@
 
 import { extractReceiptData as extractReceiptDataFlow } from '@/ai/flows/extract-receipt-data';
 import { generateSpendingInsights as generateSpendingInsightsFlow } from '@/ai/flows/generate-spending-insights';
-import { generateReceiptNarration as generateReceiptNarrationFlow } from '@/ai/flows/generate-receipt-narration';
 import { revalidatePath } from 'next/cache';
 import type { Receipt } from '@/lib/types';
-import { format } from 'date-fns';
 
 // This action is fine as it only uses Genkit and does not interact with Firestore.
 export async function extractReceiptDataAction({photoDataUri}: {photoDataUri: string}) {
@@ -60,29 +58,4 @@ export async function generateSpendingInsightsAction(spendingData: string) {
 // This new, dedicated action handles cache revalidation from the client.
 export async function revalidateAllAction() {
   revalidatePath('/', 'layout');
-}
-
-export async function generateReceiptNarrationAction(receipt: Receipt) {
-  try {
-    const formattedDate = format(new Date(receipt.date.replace(/-/g, '/')), 'MMMM do, yyyy');
-    let narrationText = `This is a receipt from ${receipt.merchant} for $${receipt.amount.toFixed(2)}, dated ${formattedDate}.`;
-
-    if (receipt.items && receipt.items.length > 0) {
-      const itemsText = receipt.items.map(item => `${item.name} for $${item.price.toFixed(2)}`).join(', ');
-      narrationText += ` The main items are: ${itemsText}.`;
-    }
-    
-    if(receipt.isBusinessExpense) {
-        narrationText += ` This was marked as a business expense under the category ${receipt.taxCategory || 'Business'}.`
-    }
-
-    const result = await generateReceiptNarrationFlow(narrationText);
-    return { narrationUrl: result.media, error: null };
-  } catch (error) {
-    console.error('Error in generateReceiptNarrationAction:', error);
-    return {
-      narrationUrl: null,
-      error: 'Could not generate audio for this receipt.',
-    };
-  }
 }
