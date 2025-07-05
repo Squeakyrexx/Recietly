@@ -6,12 +6,12 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/com
 import { Button } from '@/components/ui/button';
 import { Lightbulb, Loader2 } from 'lucide-react';
 import { generateSpendingInsightsAction } from '@/lib/actions';
-import { getReceipts } from '@/lib/mock-data';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { useAuth } from '@/context/auth-context';
 import { useToast } from '@/hooks/use-toast';
+import type { Receipt } from '@/lib/types';
 
-export function AiInsights() {
+export function AiInsights({ receiptsForInsight }: { receiptsForInsight: Receipt[] }) {
   const [isPending, startTransition] = useTransition();
   const [insight, setInsight] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
@@ -23,15 +23,16 @@ export function AiInsights() {
         toast({ title: 'Please log in to use this feature.', variant: 'destructive'});
         return;
     }
+    if (receiptsForInsight.length === 0) {
+        toast({ title: 'No Data', description: 'There is no spending data in this period to analyze.'});
+        return;
+    }
+
     startTransition(async () => {
       setError(null);
       setInsight(null);
       try {
-        // 1. Fetch receipts on the client where the user is authenticated
-        const receipts = await getReceipts(user.uid);
-        const spendingData = JSON.stringify(receipts);
-
-        // 2. Call the server action with the data
+        const spendingData = JSON.stringify(receiptsForInsight);
         const result = await generateSpendingInsightsAction(spendingData);
 
         if (result.error) {
@@ -45,7 +46,7 @@ export function AiInsights() {
           setError(err.message || "Could not generate insights. Please try again.");
           toast({
               title: 'Error',
-              description: err.message || "Could not load your spending data to generate insights.",
+              description: err.message || "Could not generate insights.",
               variant: 'destructive'
           });
       }
@@ -59,7 +60,7 @@ export function AiInsights() {
           <Lightbulb className="h-5 w-5 text-primary" /> AI Spending Insights
         </CardTitle>
         <CardDescription>
-          Let AI analyze your spending and provide personalized tips for saving money.
+          Let AI analyze your spending for the selected period and provide personalized tips.
         </CardDescription>
       </CardHeader>
       <CardContent className="space-y-4">
@@ -75,7 +76,7 @@ export function AiInsights() {
                 <AlertDescription>{error}</AlertDescription>
             </Alert>
         )}
-        <Button onClick={handleGenerateInsight} disabled={isPending} className="w-full">
+        <Button onClick={handleGenerateInsight} disabled={isPending || receiptsForInsight.length === 0} className="w-full">
           {isPending ? (
             <>
               <Loader2 className="mr-2 h-4 w-4 animate-spin" />

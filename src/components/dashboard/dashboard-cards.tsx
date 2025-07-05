@@ -3,11 +3,11 @@ import { type SpendingByCategory } from "@/lib/types";
 import { DollarSign, TrendingUp } from "lucide-react";
 import { getIconForCategory, Icons } from "@/components/icons";
 
-export function TotalSpendingCard({ total }: { total: number }) {
+export function TotalSpendingCard({ total, title }: { total: number, title: string }) {
   return (
     <Card>
       <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-        <CardTitle className="text-sm font-medium">Total Spending (All Time)</CardTitle>
+        <CardTitle className="text-sm font-medium">{title}</CardTitle>
         <DollarSign className="h-4 w-4 text-muted-foreground" />
       </CardHeader>
       <CardContent>
@@ -26,7 +26,7 @@ export function TopSpendingCard({ data }: { data: SpendingByCategory[] }) {
         <Card>
             <CardHeader>
                 <CardTitle className="flex items-center gap-2"><TrendingUp className="h-5 w-5"/> Top Categories</CardTitle>
-                <CardDescription>Your biggest spending areas of all time.</CardDescription>
+                <CardDescription>Your biggest spending areas in this period.</CardDescription>
             </CardHeader>
             <CardContent>
                {topCategories.length > 0 ? (
@@ -48,7 +48,7 @@ export function TopSpendingCard({ data }: { data: SpendingByCategory[] }) {
                 </ul>
                ) : (
                 <div className="text-center text-muted-foreground py-4">
-                    No spending recorded yet.
+                    No spending recorded for this period.
                 </div>
                )}
             </CardContent>
