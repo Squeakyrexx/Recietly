@@ -91,7 +91,7 @@ export default function SettingsPage() {
     upgradeToPro();
     toast({
         title: 'Upgrade Successful!',
-        description: 'You now have access to all Recietly Pro features.',
+        description: 'You now have access to all ReceiptWise Pro features.',
     });
   }
 
@@ -134,7 +134,7 @@ export default function SettingsPage() {
             <div className={`rounded-lg p-6 ${isPremium ? 'bg-primary/10' : 'bg-muted/50'}`}>
                 <div className="flex justify-between items-start">
                     <div>
-                        <h3 className="font-bold text-lg">{isPremium ? 'Recietly Pro' : 'Free Plan'}</h3>
+                        <h3 className="font-bold text-lg">{isPremium ? 'ReceiptWise Pro' : 'Free Plan'}</h3>
                         <p className="text-muted-foreground">{isPremium ? 'You have access to all premium features.' : 'Upgrade to unlock more power.'}</p>
                     </div>
                     {isPremium ? (
