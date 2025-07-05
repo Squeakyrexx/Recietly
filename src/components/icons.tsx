@@ -19,11 +19,10 @@ export const Logo = (props: React.SVGProps<SVGSVGElement>) => (
     strokeLinejoin="round"
     {...props}
   >
-    <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" />
-    <polyline points="14 2 14 8 20 8" />
-    <line x1="9" y1="15" x2="15" y2="15" />
-    <line x1="9" y1="18" x2="15" y2="18" />
-    <path d="M11.5 12.5c0-1.1.9-2 2-2h0a2 2 0 0 1 2 2v0a2 2 0 0 1-2 2h-1a2 2 0 0 0-2 2v0a2 2 0 0 0 2 2h0a2 2 0 0 0 2-2h0" />
+    <path d="M4 2v20l2-1 2 1 2-1 2 1 2-1 2 1 2-1V2H4z" />
+    <path d="M8 6h8" />
+    <path d="M8 10h8" />
+    <path d="M8 14h4" />
   </svg>
 );
 
