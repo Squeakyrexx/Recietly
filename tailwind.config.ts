@@ -1,7 +1,15 @@
 import type {Config} from 'tailwindcss';
 
+const categoryColors = ['groceries', 'transport', 'entertainment', 'utilities', 'dining', 'other'];
+
 export default {
   darkMode: ['class'],
+  safelist: [
+    ...categoryColors.map((color) => `bg-category-${color}`),
+    ...categoryColors.map((color) => `border-t-category-${color}`),
+    'bg-warning',
+    'bg-destructive',
+  ],
   content: [
     './src/pages/**/*.{js,ts,jsx,tsx,mdx}',
     './src/components/**/*.{js,ts,jsx,tsx,mdx}',
