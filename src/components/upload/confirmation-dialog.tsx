@@ -138,7 +138,7 @@ export function ConfirmationDialog({
             {receiptData.items && receiptData.items.length > 0 && (
               <div className="space-y-2">
                   <Label className="flex items-center gap-2"><ClipboardList className="h-4 w-4" /> Key Items</Label>
-                  <ScrollArea className="h-32 rounded-md border">
+                  <ScrollArea className="h-52 rounded-md border">
                   <Table>
                       <TableHeader>
                           <TableRow>
@@ -146,11 +146,11 @@ export function ConfirmationDialog({
                               <TableHead className="text-right">Price</TableHead>
                           </TableRow>
                       </TableHeader>
-                      <TableBody>
+                      <TableBody className="[&_tr:nth-child(even)]:bg-muted/30">
                           {receiptData.items.map((item, index) => (
                               <TableRow key={index}>
-                                  <TableCell className="font-medium truncate">{item.name}</TableCell>
-                                  <TableCell className="text-right">${item.price.toFixed(2)}</TableCell>
+                                  <TableCell className="font-medium truncate py-2">{item.name}</TableCell>
+                                  <TableCell className="text-right py-2">${item.price.toFixed(2)}</TableCell>
                               </TableRow>
                           ))}
                       </TableBody>
