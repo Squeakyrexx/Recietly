@@ -1,20 +1,20 @@
-
 'use client';
 
-import { useRef, useState, useTransition } from 'react';
+import { useRef, useState, useTransition, useEffect } from 'react';
 import { extractReceiptDataAction, revalidateAllAction } from '@/lib/actions';
 import { addReceipt } from '@/lib/mock-data';
 import { useToast } from '@/hooks/use-toast';
 import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
 import { Button } from '@/components/ui/button';
-import { Camera, Image as ImageIcon, Loader2, X } from 'lucide-react';
+import { Camera, Loader2, RefreshCw, Sparkles, Upload } from 'lucide-react';
 import { type ExtractedReceiptData, CATEGORIES } from '@/lib/types';
 import Image from 'next/image';
 import { ConfirmationDialog } from './confirmation-dialog';
 import { useRouter } from 'next/navigation';
 import type { User } from 'firebase/auth';
 import { z } from 'zod';
+import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
+import { Card } from '@/components/ui/card';
 
 type EditableReceiptData = ExtractedReceiptData & { isBusinessExpense?: boolean };
 
@@ -34,20 +34,55 @@ export function UploadForm({ user }: { user: User }) {
   const { toast } = useToast();
   const router = useRouter();
   
-  const [file, setFile] = useState<File | null>(null);
   const [previewUrl, setPreviewUrl] = useState<string | null>(null);
   const [photoDataUri, setPhotoDataUri] = useState<string | null>(null);
   const [isConfirming, setIsConfirming] = useState(false);
   const [receiptData, setReceiptData] = useState<EditableReceiptData | null>(null);
+  const [hasCameraPermission, setHasCameraPermission] = useState<boolean | null>(null);
 
-  const takePictureInputRef = useRef<HTMLInputElement>(null);
   const chooseFileInputRef = useRef<HTMLInputElement>(null);
+  const videoRef = useRef<HTMLVideoElement>(null);
+  const canvasRef = useRef<HTMLCanvasElement>(null);
+
+  useEffect(() => {
+    const getCameraPermission = async () => {
+      if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
+        console.warn('Camera API not supported by this browser.');
+        setHasCameraPermission(false);
+        return;
+      }
+      try {
+        const stream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: 'environment' } });
+        setHasCameraPermission(true);
+
+        if (videoRef.current) {
+          videoRef.current.srcObject = stream;
+        }
+      } catch (error) {
+        console.error('Error accessing camera:', error);
+        setHasCameraPermission(false);
+        toast({
+          variant: 'destructive',
+          title: 'Camera Access Denied',
+          description: 'Please enable camera permissions in your browser settings to use this feature.',
+        });
+      }
+    };
+
+    getCameraPermission();
+
+    // Cleanup: stop video stream when component unmounts
+    return () => {
+      if (videoRef.current && videoRef.current.srcObject) {
+        const stream = videoRef.current.srcObject as MediaStream;
+        stream.getTracks().forEach(track => track.stop());
+      }
+    }
+  }, [toast]);
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const selectedFile = e.target.files?.[0];
     if (selectedFile) {
-      setFile(selectedFile);
-      
       const reader = new FileReader();
       reader.onloadend = () => {
           const dataUri = reader.result as string;
@@ -56,13 +91,32 @@ export function UploadForm({ user }: { user: User }) {
       };
       reader.readAsDataURL(selectedFile);
     }
+    // Reset file input value to allow re-uploading the same file
+    if(e.target) e.target.value = "";
+  };
+  
+  const handleSnapPhoto = () => {
+    if (videoRef.current && canvasRef.current) {
+      const canvas = canvasRef.current;
+      const video = videoRef.current;
+
+      canvas.width = video.videoWidth;
+      canvas.height = video.videoHeight;
+      const context = canvas.getContext('2d');
+      if (context) {
+        context.drawImage(video, 0, 0, canvas.width, canvas.height);
+        const dataUri = canvas.toDataURL('image/jpeg');
+        setPreviewUrl(dataUri);
+        setPhotoDataUri(dataUri);
+      }
+    }
   };
 
   const handleProcessReceipt = () => {
-    if (!file || !photoDataUri) {
+    if (!photoDataUri) {
       toast({
-        title: 'Upload Error',
-        description: 'Please select a file to process.',
+        title: 'Processing Error',
+        description: 'No photo to process.',
         variant: 'destructive',
       });
       return;
@@ -98,7 +152,7 @@ export function UploadForm({ user }: { user: User }) {
 
     if (!validated.success) {
       const errorMessages = validated.error.errors.map(e => e.message).join(', ');
-      toast({ success: false, title: 'Invalid Data', description: errorMessages, variant: 'destructive' });
+      toast({ title: 'Invalid Data', description: errorMessages, variant: 'destructive' });
       return;
     }
 
@@ -106,7 +160,7 @@ export function UploadForm({ user }: { user: User }) {
         try {
             const receiptToSave = {
                 ...validated.data,
-                description: validated.data.description || '', // Ensure description is a string
+                description: validated.data.description || '',
             };
 
             const imageDataUri = photoDataUri || `https://placehold.co/600x400.png`;
@@ -132,14 +186,10 @@ export function UploadForm({ user }: { user: User }) {
   };
 
   const resetForm = () => {
-    setFile(null);
     setPreviewUrl(null);
     setPhotoDataUri(null);
     setReceiptData(null);
     setIsConfirming(false);
-    if (takePictureInputRef.current) {
-        takePictureInputRef.current.value = "";
-    }
     if (chooseFileInputRef.current) {
         chooseFileInputRef.current.value = "";
     }
@@ -159,14 +209,6 @@ export function UploadForm({ user }: { user: User }) {
     setIsConfirming(true);
   };
 
-  const handleRemovePreview = () => {
-    setFile(null);
-    setPreviewUrl(null);
-    setPhotoDataUri(null);
-    if (takePictureInputRef.current) takePictureInputRef.current.value = "";
-    if (chooseFileInputRef.current) chooseFileInputRef.current.value = "";
-  }
-  
   return (
     <>
       <ConfirmationDialog
@@ -178,66 +220,70 @@ export function UploadForm({ user }: { user: User }) {
         onSave={handleSave}
         isSaving={isSaving}
       />
-      <div className="space-y-6">
+      <div className="space-y-4">
+        <canvas ref={canvasRef} className="hidden" />
+
         {previewUrl ? (
           <div className="space-y-4 text-center">
-            <div className="relative aspect-video w-full rounded-lg overflow-hidden border-2 border-primary/20 bg-muted/50 p-2">
+            <div className="relative aspect-video w-full rounded-lg overflow-hidden border bg-muted">
                 <Image src={previewUrl} alt="Receipt preview" fill className="object-contain" />
             </div>
-            <div className="grid grid-cols-2 gap-4">
-                <Button onClick={handleProcessReceipt} disabled={isExtracting}>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <Button onClick={handleProcessReceipt} disabled={isExtracting} size="lg">
                     {isExtracting ? (
-                    <>
-                        <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                        Processing...
-                    </>
+                      <><Loader2 className="mr-2 h-4 w-4 animate-spin" /> Processing with AI</>
                     ) : (
-                    'Process Receipt'
+                      <><Sparkles className="mr-2 h-4 w-4" /> Process with AI</>
                     )}
                 </Button>
-                <Button variant="outline" onClick={handleRemovePreview}>
-                    <X className="mr-2 h-4 w-4" /> Change Photo
+                <Button variant="outline" onClick={() => resetForm()} size="lg">
+                    <RefreshCw className="mr-2 h-4 w-4" /> Retake or Upload
                 </Button>
             </div>
-            <p className="text-sm text-muted-foreground">
-                Or, <Button variant="link" type="button" className="p-0 h-auto" onClick={handleManualEntry}>enter details manually</Button>
-            </p>
           </div>
         ) : (
-            <div className="space-y-4">
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                    <Label htmlFor="take-picture" className="flex flex-col items-center justify-center gap-2 p-8 rounded-lg border-2 border-dashed border-border hover:border-primary hover:bg-primary/5 cursor-pointer transition-colors text-center">
-                        <Camera className="h-10 w-10 text-primary"/>
-                        <span className="font-semibold text-foreground">Take a Picture</span>
-                        <Input
-                            id="take-picture"
-                            type="file"
-                            className="sr-only"
-                            accept="image/*"
-                            capture="environment"
-                            onChange={handleFileChange}
-                            ref={takePictureInputRef}
-                        />
-                    </Label>
-                    <Label htmlFor="choose-file" className="flex flex-col items-center justify-center gap-2 p-8 rounded-lg border-2 border-dashed border-border hover:border-primary hover:bg-primary/5 cursor-pointer transition-colors text-center">
-                        <ImageIcon className="h-10 w-10 text-primary"/>
-                        <span className="font-semibold text-foreground">Choose from Library</span>
-                        <Input
-                            id="choose-file"
-                            type="file"
-                            className="sr-only"
-                            accept="image/*"
-                            onChange={handleFileChange}
-                            ref={chooseFileInputRef}
-                        />
-                    </Label>
+          <div className="space-y-4">
+            <Card className="relative aspect-video w-full overflow-hidden flex items-center justify-center bg-black">
+              <video ref={videoRef} className="w-full h-full object-cover" autoPlay muted playsInline />
+              {hasCameraPermission === false && (
+                <div className="absolute inset-0 flex flex-col items-center justify-center bg-black/80 text-white p-4">
+                  <Camera className="h-12 w-12 text-muted-foreground mb-4" />
+                  <Alert variant="destructive" className="text-destructive-foreground border-destructive/50 bg-destructive/80">
+                      <AlertTitle>Camera Access Denied</AlertTitle>
+                      <AlertDescription>
+                        Enable camera permissions in your browser to use this feature.
+                        You can still upload a file from your library.
+                      </AlertDescription>
+                  </Alert>
                 </div>
-                <div className="text-center">
-                  <p className="text-sm text-muted-foreground">
-                      No camera? <Button variant="link" type="button" className="p-0 h-auto" onClick={handleManualEntry}>Enter details manually</Button>
-                  </p>
-                </div>
+              )}
+               {hasCameraPermission === null && (
+                 <div className="absolute inset-0 flex items-center justify-center bg-black/50">
+                    <Loader2 className="h-8 w-8 animate-spin text-white"/>
+                 </div>
+               )}
+            </Card>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <Button onClick={handleSnapPhoto} disabled={!hasCameraPermission} size="lg">
+                <Camera className="mr-2 h-4 w-4" /> Snap Photo
+              </Button>
+              
+              <Button variant="secondary" size="lg" onClick={() => chooseFileInputRef.current?.click()}>
+                 <Upload className="mr-2 h-4 w-4" /> Upload from Library
+              </Button>
+              <Input
+                id="choose-file"
+                type="file"
+                className="sr-only"
+                accept="image/*"
+                onChange={handleFileChange}
+                ref={chooseFileInputRef}
+              />
             </div>
+            <p className="text-sm text-center text-muted-foreground">
+                No photo? <Button variant="link" onClick={handleManualEntry} className="p-0 h-auto">Enter details manually</Button>.
+            </p>
+          </div>
         )}
       </div>
     </>
