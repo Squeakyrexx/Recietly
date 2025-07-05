@@ -41,18 +41,26 @@ export default function DashboardPage() {
       const currentMonth = now.toISOString().slice(0, 7);
       const currentReceipts = receipts.filter(r => r.date?.startsWith(currentMonth));
       
-      const total = currentReceipts.reduce((sum, r) => sum + r.amount, 0);
-      setTotalSpending(total);
+      let calculatedTotal = 0;
+      const calculatedSpendingMap: { [key in Category]?: number } = {};
 
-      const spendingMap: { [key in Category]?: number } = {};
-      currentReceipts.forEach((receipt) => {
-          spendingMap[receipt.category] = (spendingMap[receipt.category] || 0) + receipt.amount;
-      });
-      const byCategory = Object.entries(spendingMap).map(([category, total]) => ({
+      for (const receipt of currentReceipts) {
+        // Ensure amount is treated as a number
+        const amount = parseFloat(String(receipt.amount)) || 0;
+        calculatedTotal += amount;
+        
+        const category = receipt.category;
+        calculatedSpendingMap[category] = (calculatedSpendingMap[category] || 0) + amount;
+      }
+      
+      setTotalSpending(calculatedTotal);
+
+      const byCategory = Object.entries(calculatedSpendingMap).map(([category, total]) => ({
           category: category as Category,
-          total: total!,
+          total: parseFloat(total.toFixed(2)),
       }));
       setSpendingByCategory(byCategory);
+
     }, handleFetchError);
 
     const unsubscribeBudgets = listenToBudgets(user.uid, setBudgets, handleFetchError);

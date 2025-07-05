@@ -46,13 +46,15 @@ export default function BudgetsPage() {
         const currentMonthReceipts = receiptsData.filter(r => r.date && r.date.startsWith(currentYearMonth));
         
         const spendingMap: { [key in Category]?: number } = {};
-        currentMonthReceipts.forEach((receipt) => {
-            spendingMap[receipt.category] = (spendingMap[receipt.category] || 0) + receipt.amount;
-        });
+        for (const receipt of currentMonthReceipts) {
+          const amount = parseFloat(String(receipt.amount)) || 0;
+          const category = receipt.category;
+          spendingMap[category] = (spendingMap[category] || 0) + amount;
+        }
 
         const spendingByCategory = Object.entries(spendingMap).map(([category, total]) => ({
           category: category as Category,
-          total: total!,
+          total: parseFloat(total.toFixed(2)),
         }));
         setSpendingThisMonth(spendingByCategory);
     }, handleFetchError);

@@ -41,18 +41,20 @@ export default function TaxReportPage() {
 
     const report: { [key: string]: { count: number, total: number }} = {};
 
-    yearReceipts.forEach(receipt => {
+    for (const receipt of yearReceipts) {
       const category = receipt.taxCategory || 'Uncategorized';
       if (!report[category]) {
         report[category] = { count: 0, total: 0 };
       }
+      const amount = parseFloat(String(receipt.amount)) || 0;
       report[category].count++;
-      report[category].total += receipt.amount;
-    });
+      report[category].total += amount;
+    }
 
     const reportRows: ReportRow[] = Object.entries(report).map(([category, data]) => ({
       category: category as TaxCategory | 'Uncategorized',
-      ...data
+      ...data,
+      total: parseFloat(data.total.toFixed(2)),
     }));
 
     reportRows.sort((a, b) => b.total - a.total);
