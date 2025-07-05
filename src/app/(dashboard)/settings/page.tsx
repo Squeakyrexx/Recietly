@@ -1,4 +1,3 @@
-
 'use client';
 
 import { useState, useEffect, useTransition } from 'react';
@@ -9,21 +8,46 @@ import { Label } from "@/components/ui/label";
 import { Gem, CheckCircle, Loader2 } from "lucide-react";
 import { useAuth } from '@/context/auth-context';
 import { useToast } from '@/hooks/use-toast';
+import { listenToReceipts } from '@/lib/mock-data';
+import { Progress } from '@/components/ui/progress';
+import { Skeleton } from '@/components/ui/skeleton';
+
+const FREE_SCAN_LIMIT = 5;
 
 
 export default function SettingsPage() {
-  const { user, updateUserProfile } = useAuth();
+  const { user, updateUserProfile, loading } = useAuth();
   const { toast } = useToast();
   const [isSaving, startSavingTransition] = useTransition();
 
   const [name, setName] = useState('');
   const [email, setEmail] = useState('');
+  const [monthlyScans, setMonthlyScans] = useState<number | null>(null);
 
   useEffect(() => {
     if (user) {
       setName(user.displayName || '');
       setEmail(user.email || '');
     }
+  }, [user]);
+
+  useEffect(() => {
+    if (!user) {
+      setMonthlyScans(null);
+      return;
+    }
+
+    const unsubscribe = listenToReceipts(user.uid, (receipts) => {
+      const now = new Date();
+      const currentYearMonth = now.toISOString().slice(0, 7);
+      const currentMonthReceipts = receipts.filter(r => r.date && r.date.startsWith(currentYearMonth));
+      setMonthlyScans(currentMonthReceipts.length);
+    }, (error) => {
+      console.error("Failed to fetch receipts for scan count:", error);
+      setMonthlyScans(0);
+    });
+
+    return () => unsubscribe();
   }, [user]);
 
   const handleSave = () => {
@@ -45,6 +69,9 @@ export default function SettingsPage() {
       }
     });
   };
+
+  const isUsageLoading = loading || monthlyScans === null;
+  const scansUsed = monthlyScans !== null ? monthlyScans : 0;
 
   return (
     <div className="space-y-8 max-w-4xl mx-auto">
@@ -73,6 +100,33 @@ export default function SettingsPage() {
             {isSaving && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
             Save Changes
           </Button>
+        </CardContent>
+      </Card>
+
+      <Card>
+        <CardHeader>
+          <CardTitle>Current Plan: Free</CardTitle>
+          <CardDescription>
+            You are currently on the Recietly free plan. See your usage for this month below.
+          </CardDescription>
+        </CardHeader>
+        <CardContent>
+            <div className="space-y-2">
+                <p className="text-sm font-medium">Monthly AI Scans</p>
+                {isUsageLoading ? (
+                    <>
+                        <Skeleton className="h-4 w-1/2" />
+                        <Skeleton className="h-2 w-full" />
+                    </>
+                ) : (
+                    <>
+                        <p className="text-sm text-muted-foreground">
+                            {scansUsed} of {FREE_SCAN_LIMIT} scans used.
+                        </p>
+                        <Progress value={(scansUsed / FREE_SCAN_LIMIT) * 100} />
+                    </>
+                )}
+            </div>
         </CardContent>
       </Card>
 
