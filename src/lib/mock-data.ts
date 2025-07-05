@@ -29,7 +29,13 @@ export const getReceipts = async (userId: string): Promise<Receipt[]> => {
     const querySnapshot = await getDocs(q);
     const receipts: Receipt[] = [];
     querySnapshot.forEach((doc) => {
-      receipts.push({ id: doc.id, ...doc.data() } as Receipt);
+      const data = doc.data();
+      receipts.push({ 
+          id: doc.id,
+          ...data,
+          // Ensure amount is always a number right after fetching
+          amount: Number(data.amount || 0),
+      } as Receipt);
     });
     return receipts;
   } catch (error) {
@@ -50,6 +56,8 @@ export const addReceipt = async (userId: string, receipt: Omit<Receipt, 'id'>) =
     ...receipt,
     date: isValidDate ? receipt.date : new Date().toISOString().split('T')[0],
     isBusinessExpense: receipt.isBusinessExpense || false,
+    // Ensure amount is a number before saving
+    amount: Number(receipt.amount || 0),
   };
 
   if (!newReceipt.isBusinessExpense) {
@@ -67,7 +75,11 @@ export const updateReceipt = async (userId: string, updatedReceipt: Receipt) => 
   const receiptDoc = doc(db, 'users', userId, 'receipts', updatedReceipt.id);
   const { id, ...data } = updatedReceipt;
 
-  const dataToUpdate: Omit<Receipt, 'id' | 'taxCategory'> & { taxCategory?: TaxCategory } = { ...data };
+  const dataToUpdate: Omit<Receipt, 'id' | 'taxCategory'> & { taxCategory?: TaxCategory } = { 
+      ...data, 
+      // Ensure amount is a number before saving
+      amount: Number(data.amount || 0),
+    };
   if (!dataToUpdate.isBusinessExpense) {
     delete dataToUpdate.taxCategory;
   }
@@ -187,7 +199,20 @@ export const listenToReceipts = (
   const unsubscribe = onSnapshot(q, (querySnapshot) => {
     const receipts: Receipt[] = [];
     querySnapshot.forEach((doc) => {
-      receipts.push({ id: doc.id, ...doc.data() } as Receipt);
+      const data = doc.data();
+      // Ensure amount is always a number right after fetching
+      const receipt: Receipt = {
+        id: doc.id,
+        merchant: data.merchant,
+        amount: Number(data.amount || 0),
+        date: data.date,
+        category: data.category,
+        description: data.description,
+        imageDataUri: data.imageDataUri,
+        isBusinessExpense: data.isBusinessExpense,
+        taxCategory: data.taxCategory,
+      };
+      receipts.push(receipt);
     });
     callback(receipts);
   }, (error) => {
