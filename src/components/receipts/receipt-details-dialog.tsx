@@ -1,7 +1,7 @@
 
 'use client';
 
-import { useState, useEffect, useTransition } from 'react';
+import { useState, useEffect, useTransition, useRef } from 'react';
 import Image from 'next/image';
 import { Button } from '@/components/ui/button';
 import {
@@ -29,8 +29,8 @@ import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Textarea } from '@/components/ui/textarea';
 import { type Receipt, CATEGORIES, TAX_CATEGORIES, TaxCategory, LineItem } from '@/lib/types';
-import { Loader2, Save, Trash2, Briefcase, ClipboardList } from 'lucide-react';
-import { revalidateAllAction } from '@/lib/actions';
+import { Loader2, Save, Trash2, Briefcase, ClipboardList, Volume2 } from 'lucide-react';
+import { revalidateAllAction, generateReceiptNarrationAction } from '@/lib/actions';
 import { updateReceipt, deleteReceipt } from '@/lib/mock-data';
 import { useToast } from '@/hooks/use-toast';
 import { useAuth } from '@/context/auth-context';
@@ -75,13 +75,27 @@ export function ReceiptDetailsDialog({
 }: ReceiptDetailsDialogProps) {
   const [isSaving, startSavingTransition] = useTransition();
   const [isDeleting, startDeletingTransition] = useTransition();
+  const [isNarrating, startNarrationTransition] = useTransition();
+
   const { toast } = useToast();
   const { user } = useAuth();
+
   const [editedReceipt, setEditedReceipt] = useState<Receipt | null>(receipt);
+  const [narrationUrl, setNarrationUrl] = useState<string | null>(null);
+  const audioRef = useRef<HTMLAudioElement>(null);
 
   useEffect(() => {
+    // When a new receipt is passed in, update the state and reset narration
     setEditedReceipt(receipt);
+    setNarrationUrl(null);
   }, [receipt]);
+  
+  useEffect(() => {
+    // When the narration URL is set, play the audio
+    if (narrationUrl && audioRef.current) {
+      audioRef.current.play().catch(e => console.error("Audio playback failed:", e));
+    }
+  }, [narrationUrl]);
 
   if (!editedReceipt) return null;
 
@@ -158,13 +172,37 @@ export function ReceiptDetailsDialog({
       }
     });
   }
+  
+  const handleNarration = () => {
+    if (!editedReceipt) return;
+
+    startNarrationTransition(async () => {
+        setNarrationUrl(null);
+        const result = await generateReceiptNarrationAction(editedReceipt);
+        if (result.error) {
+            toast({
+                title: 'Narration Failed',
+                description: result.error,
+                variant: 'destructive',
+            });
+        } else if (result.narrationUrl) {
+            setNarrationUrl(result.narrationUrl);
+        }
+    });
+  };
 
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="max-w-4xl grid-rows-[auto_minmax(0,1fr)_auto] grid h-full max-h-[90vh]">
         <DialogHeader>
-          <DialogTitle>Receipt Details</DialogTitle>
+            <div className="flex items-center justify-between">
+                <DialogTitle>Receipt Details</DialogTitle>
+                <Button variant="outline" size="icon" onClick={handleNarration} disabled={isNarrating}>
+                    {isNarrating ? <Loader2 className="h-4 w-4 animate-spin" /> : <Volume2 className="h-4 w-4" />}
+                    <span className="sr-only">Read details aloud</span>
+                </Button>
+            </div>
           <DialogDescription>
             View or edit the details for this receipt.
           </DialogDescription>
@@ -245,11 +283,11 @@ export function ReceiptDetailsDialog({
                                     <TableHead className="text-right">Price</TableHead>
                                 </TableRow>
                                 </TableHeader>
-                                <TableBody className="[&_tr:nth-child(even)]:bg-muted/30 [&_tr>td]:py-2">
+                                <TableBody className="[&_tr:nth-child(even)]:bg-muted/30">
                                 {editedReceipt.items.map((item, index) => (
-                                    <TableRow key={index}>
-                                    <TableCell className="font-medium truncate py-2">{item.name}</TableCell>
-                                    <TableCell className="text-right py-2">${item.price.toFixed(2)}</TableCell>
+                                    <TableRow key={index} className="[&>td]:py-2">
+                                    <TableCell className="font-medium truncate">{item.name}</TableCell>
+                                    <TableCell className="text-right">${item.price.toFixed(2)}</TableCell>
                                     </TableRow>
                                 ))}
                                 </TableBody>
@@ -335,6 +373,7 @@ export function ReceiptDetailsDialog({
             </Button>
           </div>
         </DialogFooter>
+        <audio ref={audioRef} src={narrationUrl || ''} className="hidden" />
       </DialogContent>
     </Dialog>
   );
