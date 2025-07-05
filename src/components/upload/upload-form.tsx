@@ -33,7 +33,7 @@ const receiptDataSchema = z.object({
   })).optional(),
 });
 
-const SCAN_LIMIT = 10;
+const SCAN_LIMIT = 100;
 
 export function UploadForm({ user, receiptCount }: { user: User; receiptCount: number }) {
   const [isExtracting, startExtractionTransition] = useTransition();

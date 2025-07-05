@@ -31,7 +31,7 @@ const UploadForm = dynamic(() => import('@/components/upload/upload-form').then(
   loading: () => <UploadFormSkeleton />,
 });
 
-const SCAN_LIMIT = 10;
+const SCAN_LIMIT = 100;
 
 export default function UploadPage() {
   const { user, loading, isPremium } = useAuth();
