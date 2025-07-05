@@ -1,3 +1,4 @@
+
 'use client';
 
 import { useRef, useState, useTransition, useEffect } from 'react';
@@ -10,7 +11,6 @@ import { Camera, Loader2, RefreshCw, Sparkles, Upload, Gem } from 'lucide-react'
 import { type ExtractedReceiptData, CATEGORIES, TAX_CATEGORIES, type TaxCategory, type LineItem } from '@/lib/types';
 import Image from 'next/image';
 import { ConfirmationDialog } from './confirmation-dialog';
-import { useRouter } from 'next/navigation';
 import type { User } from 'firebase/auth';
 import { z } from 'zod';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
@@ -39,7 +39,6 @@ export function UploadForm({ user, receiptCount }: { user: User; receiptCount: n
   const [isExtracting, startExtractionTransition] = useTransition();
   const [isSaving, startSavingTransition] = useTransition();
   const { toast } = useToast();
-  const router = useRouter();
   const { isPremium, upgradeToPro } = useAuth();
   
   const [previewUrl, setPreviewUrl] = useState<string | null>(null);
@@ -181,7 +180,6 @@ export function UploadForm({ user, receiptCount }: { user: User; receiptCount: n
                 description: "Receipt saved successfully!",
             });
             resetForm();
-            router.push('/receipts');
         } catch (e) {
             const err = e as Error;
             toast({
