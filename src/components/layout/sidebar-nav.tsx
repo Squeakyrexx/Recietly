@@ -1,3 +1,4 @@
+
 'use client';
 
 import Link from 'next/link';
@@ -8,7 +9,6 @@ import {
   SidebarMenu,
   SidebarMenuItem,
   SidebarMenuButton,
-  SidebarFooter,
   SidebarSeparator,
 } from '@/components/ui/sidebar';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
@@ -74,54 +74,55 @@ export function SidebarNav() {
             </SidebarMenuItem>
           ))}
         </SidebarMenu>
-      </SidebarContent>
-      <SidebarFooter className="gap-2">
-        {!isPremium && (
-            <div className="px-2">
-                <Card className="bg-primary/10 text-center">
-                    <CardHeader className="p-4">
-                        <CardTitle className="text-base flex items-center justify-center gap-2">
-                            <Gem className="text-primary"/> Upgrade to Pro
-                        </CardTitle>
-                        <CardDescription>
-                            Unlock advanced features and get unlimited receipt uploads.
-                        </CardDescription>
-                    </CardHeader>
-                    <CardContent className="p-4 pt-0">
-                        <Link href="/settings">
-                            <Button className="w-full" size="sm">Upgrade</Button>
-                        </Link>
-                    </CardContent>
-                </Card>
+        
+        <div className="mt-auto flex flex-col gap-2">
+            {!isPremium && (
+                <div className="px-2">
+                    <Card className="bg-primary/10 text-center">
+                        <CardHeader className="p-4">
+                            <CardTitle className="text-base flex items-center justify-center gap-2">
+                                <Gem className="text-primary"/> Upgrade to Pro
+                            </CardTitle>
+                            <CardDescription>
+                                Unlock advanced features and get unlimited receipt uploads.
+                            </CardDescription>
+                        </CardHeader>
+                        <CardContent className="p-4 pt-0">
+                            <Link href="/settings">
+                                <Button className="w-full" size="sm">Upgrade</Button>
+                            </Link>
+                        </CardContent>
+                    </Card>
+                </div>
+            )}
+            <div className="p-2 pt-0">
+              <SidebarMenu className="p-0">
+                <SidebarMenuItem>
+                  <Link href="/settings">
+                    <SidebarMenuButton isActive={pathname.startsWith('/settings')}>
+                      <Settings />
+                      <span>Settings</span>
+                    </SidebarMenuButton>
+                  </Link>
+                </SidebarMenuItem>
+              </SidebarMenu>
             </div>
-        )}
-        <div className="p-2 pt-0">
-          <SidebarMenu className="p-0">
-            <SidebarMenuItem>
-              <Link href="/settings">
-                <SidebarMenuButton isActive={pathname.startsWith('/settings')}>
-                  <Settings />
-                  <span>Settings</span>
-                </SidebarMenuButton>
-              </Link>
-            </SidebarMenuItem>
-          </SidebarMenu>
+            <SidebarSeparator />
+            <div className="flex items-center gap-2 p-2">
+              <Avatar className="h-8 w-8">
+                <AvatarImage src={user?.photoURL || "https://placehold.co/100x100.png"} alt="User" />
+                <AvatarFallback>{getAvatarFallback(user)}</AvatarFallback>
+              </Avatar>
+              <div className="flex flex-col truncate">
+                <span className="text-sm font-medium truncate">{user?.displayName || 'User'}</span>
+                <span className="text-xs text-muted-foreground truncate">{user?.email}</span>
+              </div>
+              <Button variant="ghost" size="icon" className="ml-auto h-8 w-8" onClick={handleLogout} title="Log Out">
+                <LogOut className="h-4 w-4" />
+              </Button>
+            </div>
         </div>
-        <SidebarSeparator />
-        <div className="flex items-center gap-2 p-2">
-          <Avatar className="h-8 w-8">
-            <AvatarImage src={user?.photoURL || "https://placehold.co/100x100.png"} alt="User" />
-            <AvatarFallback>{getAvatarFallback(user)}</AvatarFallback>
-          </Avatar>
-          <div className="flex flex-col truncate">
-            <span className="text-sm font-medium truncate">{user?.displayName || 'User'}</span>
-            <span className="text-xs text-muted-foreground truncate">{user?.email}</span>
-          </div>
-          <Button variant="ghost" size="icon" className="ml-auto h-8 w-8" onClick={handleLogout} title="Log Out">
-            <LogOut className="h-4 w-4" />
-          </Button>
-        </div>
-      </SidebarFooter>
+      </SidebarContent>
     </>
   );
 }
