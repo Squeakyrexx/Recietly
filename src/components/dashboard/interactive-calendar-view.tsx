@@ -73,7 +73,7 @@ export function InteractiveCalendarView({ receipts, setAllReceipts }: Interactiv
                   modifiersClassNames={{
                       spending: 'day-with-spending',
                   }}
-                  className="rounded-md border not-prose"
+                  className="rounded-md border not-prose w-full"
               />
           </div>
           <div className="lg:col-span-1">
