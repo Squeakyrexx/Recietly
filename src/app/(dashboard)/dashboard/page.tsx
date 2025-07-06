@@ -259,7 +259,7 @@ export default function DashboardPage() {
                 </CardContent>
              </Card>
           ) : (
-            <InteractiveCalendarView receipts={allReceipts!} />
+            <InteractiveCalendarView receipts={allReceipts!} setAllReceipts={setAllReceipts} />
           )}
         </TabsContent>
       </Tabs>
