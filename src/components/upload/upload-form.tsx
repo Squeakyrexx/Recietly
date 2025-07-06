@@ -76,6 +76,22 @@ export function UploadForm({ user, receiptCount }: { user: User; receiptCount: n
         if (e.target) e.target.value = ""; // Reset input to allow same file selection
     }
   };
+
+  const compressAndGetDataUri = async (inputFile: File): Promise<string> => {
+    try {
+      const options = {
+        maxSizeMB: 0.7,
+        maxWidthOrHeight: 1920,
+        useWebWorker: true,
+      };
+      const compressedFile = await imageCompression(inputFile, options);
+      return await fileToDataUri(compressedFile);
+    } catch (error) {
+      console.error('Image compression failed:', error);
+      // Re-throw a more user-friendly error message
+      throw new Error('Failed to compress image. The file might be corrupted or in an unsupported format.');
+    }
+  };
   
   const handleProcessReceipt = async () => {
     if (!file) {
@@ -85,17 +101,10 @@ export function UploadForm({ user, receiptCount }: { user: User; receiptCount: n
 
     startExtractingTransition(async () => {
       try {
-        const options = {
-          maxSizeMB: 0.7, // Target ~0.7MB to stay safely under Firestore's 1MB limit after Base64 encoding.
-          maxWidthOrHeight: 1920,
-          useWebWorker: true,
-        };
-        const compressedFile = await imageCompression(file, options);
-        const dataUri = await fileToDataUri(compressedFile);
+        const dataUri = await compressAndGetDataUri(file);
         const result = await extractReceiptDataAction({ photoDataUri: dataUri });
 
         if (result && result.data) {
-          // Create a complete object to ensure the confirmation dialog receives all expected props.
           setReceiptData({
             merchant: result.data.merchant || '',
             amount: result.data.amount || 0,
@@ -116,9 +125,10 @@ export function UploadForm({ user, receiptCount }: { user: User; receiptCount: n
         }
       } catch (error) {
         console.error("Error during receipt processing:", error);
+        const errorMessage = error instanceof Error ? error.message : 'An unknown error occurred during processing.';
         toast({
-          title: 'File Read Error',
-          description: 'There was a problem reading your file. Please try again.',
+          title: 'Processing Failed',
+          description: errorMessage,
           variant: 'destructive',
         });
       }
@@ -150,23 +160,17 @@ export function UploadForm({ user, receiptCount }: { user: User; receiptCount: n
     
     startSavingTransition(async () => {
       try {
-        let imageDataUri = ''; // Default for manual entry
+        let imageDataUri = '';
 
-        // If a file was selected, compress it and create a data URI
+        // If a file was part of the original submission, compress it for saving.
         if (file) {
-          const options = {
-            maxSizeMB: 0.7,
-            maxWidthOrHeight: 1920,
-            useWebWorker: true,
-          };
-          const compressedFile = await imageCompression(file, options);
-          imageDataUri = await fileToDataUri(compressedFile);
+          imageDataUri = await compressAndGetDataUri(file);
         }
 
         const receiptToSave: Omit<Receipt, 'id'> = {
           ...validated.data,
           description: validated.data.description || '',
-          imageUrl: imageDataUri, // Use the compressed data URI or empty string
+          imageUrl: imageDataUri,
         };
 
         await addReceipt(user.uid, receiptToSave);
@@ -179,11 +183,11 @@ export function UploadForm({ user, receiptCount }: { user: User; receiptCount: n
 
         resetForm();
       } catch (e) {
-        const err = e as Error;
-        console.error('Error during save:', err);
+        console.error('Error during save:', e);
+        const errorMessage = e instanceof Error ? e.message : 'Could not save the receipt. Please try again.';
         toast({
           title: 'Error Saving',
-          description: err.message || 'Could not save the receipt. Please try again.',
+          description: errorMessage,
           variant: 'destructive',
         });
       }
@@ -202,7 +206,7 @@ export function UploadForm({ user, receiptCount }: { user: User; receiptCount: n
         isBusinessExpense: false,
         items: [],
     });
-    setPreviewUrl(null); // No preview for manual entry
+    setPreviewUrl(null);
     setIsConfirming(true);
   };
   
