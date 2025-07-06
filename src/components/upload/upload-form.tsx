@@ -16,8 +16,7 @@ import { z } from 'zod';
 import { Card, CardHeader, CardTitle, CardDescription, CardContent } from '@/components/ui/card';
 import { useAuth } from '@/context/auth-context';
 import { Label } from '@/components/ui/label';
-import { getStorage, ref, uploadBytes, getDownloadURL } from 'firebase/storage';
-import { app } from '@/lib/firebase';
+import imageCompression from 'browser-image-compression';
 
 type EditableReceiptData = ExtractedReceiptData & { isBusinessExpense?: boolean; taxCategory?: TaxCategory; items?: LineItem[] };
 
@@ -37,7 +36,7 @@ const receiptDataSchema = z.object({
 
 const SCAN_LIMIT = 10;
 
-const fileToDataUri = (file: File): Promise<string> => {
+const fileToDataUri = (file: File | Blob): Promise<string> => {
     return new Promise((resolve, reject) => {
         const reader = new FileReader();
         reader.onload = () => resolve(reader.result as string);
@@ -86,7 +85,13 @@ export function UploadForm({ user, receiptCount }: { user: User; receiptCount: n
 
     startExtractingTransition(async () => {
       try {
-        const dataUri = await fileToDataUri(file);
+        const options = {
+          maxSizeMB: 0.7, // Target ~0.7MB to stay safely under Firestore's 1MB limit after Base64 encoding.
+          maxWidthOrHeight: 1920,
+          useWebWorker: true,
+        };
+        const compressedFile = await imageCompression(file, options);
+        const dataUri = await fileToDataUri(compressedFile);
         const result = await extractReceiptDataAction({ photoDataUri: dataUri });
 
         if (result && result.data) {
@@ -145,22 +150,23 @@ export function UploadForm({ user, receiptCount }: { user: User; receiptCount: n
     
     startSavingTransition(async () => {
       try {
-        let imageUrl = ''; // Default for manual entry
+        let imageDataUri = ''; // Default for manual entry
 
-        // If a file was selected, upload it to Firebase Storage
+        // If a file was selected, compress it and create a data URI
         if (file) {
-          const storage = getStorage(app);
-          const filePath = `receipts/${user.uid}/${Date.now()}-${file.name}`;
-          const storageRef = ref(storage, filePath);
-          
-          const uploadResult = await uploadBytes(storageRef, file);
-          imageUrl = await getDownloadURL(uploadResult.ref);
+          const options = {
+            maxSizeMB: 0.7,
+            maxWidthOrHeight: 1920,
+            useWebWorker: true,
+          };
+          const compressedFile = await imageCompression(file, options);
+          imageDataUri = await fileToDataUri(compressedFile);
         }
 
         const receiptToSave: Omit<Receipt, 'id'> = {
           ...validated.data,
           description: validated.data.description || '',
-          imageUrl: imageUrl, // Use the URL from storage or empty string
+          imageUrl: imageDataUri, // Use the compressed data URI or empty string
         };
 
         await addReceipt(user.uid, receiptToSave);
