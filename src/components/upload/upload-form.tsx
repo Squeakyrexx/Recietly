@@ -2,6 +2,7 @@
 'use client';
 
 import { useState, useTransition, useEffect } from 'react';
+import imageCompression from 'browser-image-compression';
 import { extractReceiptDataAction, revalidateAllAction } from '@/lib/actions';
 import { addReceipt } from '@/lib/mock-data';
 import { useToast } from '@/hooks/use-toast';
@@ -49,7 +50,7 @@ export function UploadForm({ user, receiptCount }: { user: User; receiptCount: n
   const [file, setFile] = useState<File | null>(null);
   const [previewUrl, setPreviewUrl] = useState<string | null>(null);
   const [isExtracting, startExtractionTransition] = useTransition();
-  const [isSaving, startSavingTransition] = useTransition();
+  const [isSaving, setIsSaving] = useState(false);
   const { toast } = useToast();
   const { isPremium, upgradeToPro } = useAuth();
   
@@ -122,8 +123,8 @@ export function UploadForm({ user, receiptCount }: { user: User; receiptCount: n
       setPreviewUrl(null);
   };
 
-  const handleSave = () => {
-    if (!receiptData || !user || !previewUrl) {
+  const handleSave = async () => {
+    if (!receiptData || !user) {
         toast({ title: 'An error occurred.', variant: 'destructive'});
         return;
     };
@@ -136,36 +137,58 @@ export function UploadForm({ user, receiptCount }: { user: User; receiptCount: n
       return;
     }
 
-    startSavingTransition(async () => {
-        try {
-            const receiptToSave = {
-                ...validated.data,
-                description: validated.data.description || '',
+    setIsSaving(true);
+    try {
+        const receiptToSave = {
+            ...validated.data,
+            description: validated.data.description || '',
+        };
+        
+        let imageDataUri: string;
+
+        if (file) {
+            // If there's a file, compress it
+            const options = {
+              maxSizeMB: 0.8, // Set max size to 0.8MB to be safe for Firestore's 1MB limit
+              maxWidthOrHeight: 1920,
+              useWebWorker: true,
             };
             
-            // If it's the manual entry placeholder, use it, otherwise use the actual file.
-            const imageDataUri = previewUrl === 'https://placehold.co/600x400.png' 
-                ? previewUrl 
-                : await fileToDataUri(file!);
+            const compressedFile = await imageCompression(file, options);
+            imageDataUri = await fileToDataUri(compressedFile);
 
-            await addReceipt(user.uid, { ...receiptToSave, imageDataUri });
-            await revalidateAllAction();
-
-            toast({
-                title: 'Success!',
-                description: "Receipt saved successfully!",
-            });
-            
-            resetForm(); // Reset form for next upload
-        } catch (e) {
-            const err = e as Error;
-            toast({
-                title: 'Error Saving',
-                description: err.message || "An unexpected error occurred.",
-                variant: 'destructive',
-            });
+        } else if (previewUrl === 'https://placehold.co/600x400.png') {
+            // Handle manual entry case
+            imageDataUri = previewUrl;
+        } else {
+            throw new Error("No image file or placeholder available to save.");
         }
-    });
+
+        if (imageDataUri.length > 1048487) {
+            // Final check after compression
+            throw new Error("Image is still too large to save even after compression. Please try a smaller image.");
+        }
+
+        await addReceipt(user.uid, { ...receiptToSave, imageDataUri });
+        await revalidateAllAction();
+
+        toast({
+            title: 'Success!',
+            description: "Receipt saved successfully!",
+        });
+        
+        resetForm(); // Reset form for next upload
+    } catch (e) {
+        const err = e as Error;
+        console.error("Error during save:", err);
+        toast({
+            title: 'Error Saving',
+            description: err.message || "An unexpected error occurred while compressing or saving the image.",
+            variant: 'destructive',
+        });
+    } finally {
+        setIsSaving(false);
+    }
   };
 
   const handleManualEntry = () => {
