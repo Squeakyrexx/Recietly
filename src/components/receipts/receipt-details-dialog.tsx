@@ -164,7 +164,7 @@ export function ReceiptDetailsDialog({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-4xl grid-rows-[auto_minmax(0,1fr)_auto] grid h-full max-h-[90vh]">
+      <DialogContent className="max-w-sm md:max-w-2xl lg:max-w-4xl grid-rows-[auto_minmax(0,1fr)_auto] grid h-full max-h-[90vh]">
         <DialogHeader>
           <DialogTitle>Receipt Details</DialogTitle>
           <DialogDescription>
