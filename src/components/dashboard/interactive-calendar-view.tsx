@@ -57,8 +57,8 @@ export function InteractiveCalendarView({ receipts, setAllReceipts }: Interactiv
         onReceiptDelete={handleReceiptDelete}
       />
       <Card>
-        <div className="grid grid-cols-1 lg:grid-cols-5 gap-6 p-6">
-          <div className="lg:col-span-3">
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 p-6">
+          <div className="lg:col-span-2">
               <Calendar
                   mode="single"
                   selected={selectedDay}
@@ -76,7 +76,7 @@ export function InteractiveCalendarView({ receipts, setAllReceipts }: Interactiv
                   className="rounded-md border not-prose"
               />
           </div>
-          <div className="lg:col-span-2">
+          <div className="lg:col-span-1">
               <h2 className="font-semibold text-lg mb-2">
                   {selectedDay ? `Expenses for ${format(selectedDay, 'MMM d, yyyy')}` : 'Select a day'}
               </h2>
