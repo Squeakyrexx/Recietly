@@ -13,7 +13,10 @@ import { Skeleton } from '@/components/ui/skeleton';
 import { useToast } from '@/hooks/use-toast';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { subMonths, startOfMonth, endOfMonth, startOfYear, endOfYear, subYears, endOfToday, subDays } from 'date-fns';
-import { SpendingCalendar } from '@/components/dashboard/spending-calendar';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { InteractiveCalendarView } from '@/components/dashboard/interactive-calendar-view';
+import { LayoutDashboard, Calendar as CalendarIcon } from 'lucide-react';
+import { Card, CardContent } from '@/components/ui/card';
 
 type DateRange = 'this-month' | 'last-3-months' | 'this-year' | 'all-time';
 
@@ -133,8 +136,8 @@ export default function DashboardPage() {
     }
   }, [allReceipts, dateRange]);
 
-  const { spendingThisMonth, receiptsThisMonth } = useMemo(() => {
-    if (!allReceipts) return { spendingThisMonth: null, receiptsThisMonth: null };
+  const { spendingThisMonth } = useMemo(() => {
+    if (!allReceipts) return { spendingThisMonth: null };
     
     const currentMonthStart = startOfMonth(new Date());
     const receiptsInMonth = allReceipts.filter(r => new Date(r.date.replace(/-/g, '/')) >= currentMonthStart);
@@ -151,7 +154,7 @@ export default function DashboardPage() {
         total: parseFloat(total!.toFixed(2)),
     }));
     
-    return { spendingThisMonth: spendingByCategory, receiptsThisMonth: receiptsInMonth };
+    return { spendingThisMonth: spendingByCategory };
 
   }, [allReceipts]);
 
@@ -181,69 +184,85 @@ export default function DashboardPage() {
     };
   }, [user, loading, toast]);
 
-  const isLoading = !filteredData || !budgets || !spendingThisMonth || !receiptsThisMonth;
+  const isLoading = !filteredData || !budgets || !spendingThisMonth || !allReceipts;
   const cardTitle = `Total Spending (${dateRangeOptions.find(o => o.value === dateRange)?.label})`;
   const showComparison = dateRange !== 'all-time';
 
   return (
     <div className="space-y-6">
-      <header className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
-        <div>
-            <h1 className="font-headline text-3xl font-bold tracking-tight">Dashboard</h1>
-            <p className="text-muted-foreground">A summary of your spending habits.</p>
-        </div>
-        <div className="w-full sm:w-auto">
-            <Select value={dateRange} onValueChange={(value: DateRange) => setDateRange(value)}>
-                <SelectTrigger className="w-full sm:w-[180px]">
-                    <SelectValue placeholder="Select date range" />
-                </SelectTrigger>
-                <SelectContent>
-                    {dateRangeOptions.map(option => (
-                        <SelectItem key={option.value} value={option.value}>
-                            {option.label}
-                        </SelectItem>
-                    ))}
-                </SelectContent>
-            </Select>
-        </div>
+      <header>
+        <h1 className="font-headline text-3xl font-bold tracking-tight">Dashboard</h1>
+        <p className="text-muted-foreground">A summary of your spending habits.</p>
       </header>
-      <div className="grid grid-cols-1 gap-6 md:grid-cols-2 lg:grid-cols-3">
-        {isLoading ? (
-          <>
-            <div className="lg:col-span-1"><Skeleton className="h-32 rounded-lg" /></div>
-            <div className="lg:col-span-2"><Skeleton className="h-32 rounded-lg" /></div>
-            <div className="lg:col-span-2"><Skeleton className="h-[400px] rounded-lg" /></div>
-            <div className="lg:col-span-1"><Skeleton className="h-[400px] rounded-lg" /></div>
-            <div className="lg:col-span-3"><Skeleton className="h-48 rounded-lg" /></div>
-            <div className="lg:col-span-3"><Skeleton className="h-[400px] rounded-lg" /></div>
-          </>
-        ) : (
-          <>
-            <div className="lg:col-span-1">
-              <TotalSpendingCard 
-                total={filteredData.totalSpending} 
-                title={cardTitle} 
-                previousTotal={showComparison ? filteredData.previousTotalSpending : undefined}
-              />
+
+      <Tabs defaultValue="overview" className="space-y-4">
+        <TabsList>
+            <TabsTrigger value="overview"><LayoutDashboard className="mr-2 h-4 w-4"/>Overview</TabsTrigger>
+            <TabsTrigger value="calendar"><CalendarIcon className="mr-2 h-4 w-4"/>Calendar</TabsTrigger>
+        </TabsList>
+        <TabsContent value="overview" className="space-y-4">
+          <div className="flex justify-end">
+            <div className="w-full sm:w-auto">
+                <Select value={dateRange} onValueChange={(value: DateRange) => setDateRange(value)}>
+                    <SelectTrigger className="w-full sm:w-[180px]">
+                        <SelectValue placeholder="Select date range" />
+                    </SelectTrigger>
+                    <SelectContent>
+                        {dateRangeOptions.map(option => (
+                            <SelectItem key={option.value} value={option.value}>
+                                {option.label}
+                            </SelectItem>
+                        ))}
+                    </SelectContent>
+                </Select>
             </div>
-            <div className="lg:col-span-2">
-              <BudgetSummary budgets={budgets} spending={spendingThisMonth} />
-            </div>
-            <div className="lg:col-span-2">
-              <CategorySpendingChart data={filteredData.spendingByCategoryWithComparison} showComparison={showComparison} />
-            </div>
-            <div className="lg:col-span-1">
-              <TopSpendingCard data={filteredData.spendingByCategory} />
-            </div>
-            <div className="lg:col-span-3">
-                <SpendingCalendar receipts={receiptsThisMonth} month={new Date()} />
-            </div>
-            <div className="lg:col-span-3">
-              <AiInsights receiptsForInsight={filteredData.receipts} />
-            </div>
-          </>
-        )}
-      </div>
+          </div>
+          <div className="grid grid-cols-1 gap-6 md:grid-cols-2 lg:grid-cols-3">
+            {isLoading ? (
+              <>
+                <div className="lg:col-span-1"><Skeleton className="h-32 rounded-lg" /></div>
+                <div className="lg:col-span-2"><Skeleton className="h-32 rounded-lg" /></div>
+                <div className="lg:col-span-2"><Skeleton className="h-[400px] rounded-lg" /></div>
+                <div className="lg:col-span-1"><Skeleton className="h-[400px] rounded-lg" /></div>
+                <div className="lg:col-span-3"><Skeleton className="h-48 rounded-lg" /></div>
+              </>
+            ) : (
+              <>
+                <div className="lg:col-span-1">
+                  <TotalSpendingCard 
+                    total={filteredData.totalSpending} 
+                    title={cardTitle} 
+                    previousTotal={showComparison ? filteredData.previousTotalSpending : undefined}
+                  />
+                </div>
+                <div className="lg:col-span-2">
+                  <BudgetSummary budgets={budgets!} spending={spendingThisMonth!} />
+                </div>
+                <div className="lg:col-span-2">
+                  <CategorySpendingChart data={filteredData.spendingByCategoryWithComparison} showComparison={showComparison} />
+                </div>
+                <div className="lg:col-span-1">
+                  <TopSpendingCard data={filteredData.spendingByCategory} />
+                </div>
+                <div className="lg:col-span-3">
+                  <AiInsights receiptsForInsight={filteredData.receipts} />
+                </div>
+              </>
+            )}
+          </div>
+        </TabsContent>
+        <TabsContent value="calendar">
+          {isLoading ? (
+            <Card>
+                <CardContent className="p-6">
+                  <Skeleton className="h-[520px] w-full" />
+                </CardContent>
+             </Card>
+          ) : (
+            <InteractiveCalendarView receipts={allReceipts!} />
+          )}
+        </TabsContent>
+      </Tabs>
     </div>
   );
 }
