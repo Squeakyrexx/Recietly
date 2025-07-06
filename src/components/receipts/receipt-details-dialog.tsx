@@ -63,7 +63,7 @@ const receiptSchema = z.object({
 
 const updateSchema = z.object({
     id: z.string(),
-    imageUrl: z.string(),
+    imageUrl: z.string().optional(),
 }).merge(receiptSchema);
 
 export function ReceiptDetailsDialog({
@@ -178,7 +178,7 @@ export function ReceiptDetailsDialog({
                     <Image src={editedReceipt.imageUrl} alt="Receipt preview" fill className="object-contain" />
                     ) : (
                     <div className="flex h-full w-full items-center justify-center bg-muted">
-                        <p className="text-muted-foreground">No image preview</p>
+                        <p className="text-muted-foreground">No image available</p>
                     </div>
                     )}
                 </div>

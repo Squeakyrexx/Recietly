@@ -110,7 +110,7 @@ export function SidebarNav() {
             <SidebarSeparator />
             <div className="flex items-center gap-2 p-2">
               <Avatar className="h-8 w-8">
-                <AvatarImage src={user?.photoURL || "https://placehold.co/100x100.png"} alt="User" />
+                <AvatarImage src={user?.photoURL || undefined} alt="User" />
                 <AvatarFallback>{getAvatarFallback(user)}</AvatarFallback>
               </Avatar>
               <div className="flex flex-col truncate">

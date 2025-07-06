@@ -10,6 +10,7 @@ import { format, isSameDay } from 'date-fns';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Badge } from '@/components/ui/badge';
 import { ReceiptDetailsDialog } from '@/components/receipts/receipt-details-dialog';
+import { FileImage } from 'lucide-react';
 
 interface InteractiveCalendarViewProps {
   receipts: Receipt[];
@@ -88,12 +89,18 @@ export function InteractiveCalendarView({ receipts, setAllReceipts }: Interactiv
                                   <CardContent className="p-3">
                                     <div className="flex gap-3">
                                         <div className="relative w-20 h-20 bg-muted rounded-md flex-shrink-0">
-                                            <Image
-                                                src={receipt.imageUrl}
-                                                alt={receipt.merchant}
-                                                fill
-                                                className="object-cover"
-                                            />
+                                            {receipt.imageUrl ? (
+                                                <Image
+                                                    src={receipt.imageUrl}
+                                                    alt={receipt.merchant}
+                                                    fill
+                                                    className="object-cover"
+                                                />
+                                            ) : (
+                                                <div className="flex h-full w-full items-center justify-center text-muted-foreground">
+                                                    <FileImage className="h-10 w-10" />
+                                                </div>
+                                            )}
                                         </div>
                                         <div className="flex-grow space-y-1">
                                             <div className="flex justify-between items-start">

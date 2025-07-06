@@ -1,7 +1,7 @@
 
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useTransition } from 'react';
 import { extractReceiptDataAction, revalidateAllAction } from '@/lib/actions';
 import { addReceipt } from '@/lib/mock-data';
 import { useToast } from '@/hooks/use-toast';
@@ -119,7 +119,7 @@ export function UploadForm({ user, receiptCount }: { user: User; receiptCount: n
   };
 
   const handleSave = async () => {
-    if (!receiptData || !user || !previewUrl) {
+    if (!receiptData || !user) {
       toast({ title: 'An error occurred.', variant: 'destructive' });
       return;
     }
@@ -133,16 +133,17 @@ export function UploadForm({ user, receiptCount }: { user: User; receiptCount: n
     
     startSavingTransition(async () => {
       try {
-        const dataUri = file ? await fileToDataUri(file) : previewUrl;
-        if (!dataUri) throw new Error("Image data is missing.");
-        
-        const receiptToSave = {
+        const receiptToSave: Omit<Receipt, 'id'> = {
           ...validated.data,
           description: validated.data.description || '',
-          imageUrl: dataUri,
         };
 
-        await addReceipt(user.uid, receiptToSave as Omit<Receipt, 'id'>);
+        // Only add imageUrl if a file was uploaded for processing
+        if (file && previewUrl) {
+           receiptToSave.imageUrl = await fileToDataUri(file);
+        }
+
+        await addReceipt(user.uid, receiptToSave);
         await revalidateAllAction();
 
         toast({
@@ -175,7 +176,7 @@ export function UploadForm({ user, receiptCount }: { user: User; receiptCount: n
         isBusinessExpense: false,
         items: [],
     });
-    setPreviewUrl('https://placehold.co/600x400.png'); // Placeholder for manual entry
+    setPreviewUrl(null); // No placeholder
     setIsConfirming(true);
   };
   
