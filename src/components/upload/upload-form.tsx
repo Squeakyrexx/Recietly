@@ -36,6 +36,15 @@ const receiptDataSchema = z.object({
 
 const SCAN_LIMIT = 10;
 
+const fileToDataUri = (file: File): Promise<string> => {
+    return new Promise((resolve, reject) => {
+        const reader = new FileReader();
+        reader.onload = () => resolve(reader.result as string);
+        reader.onerror = error => reject(error);
+        reader.readAsDataURL(file);
+    });
+};
+
 export function UploadForm({ user, receiptCount }: { user: User; receiptCount: number }) {
   const [file, setFile] = useState<File | null>(null);
   const [previewUrl, setPreviewUrl] = useState<string | null>(null);
@@ -75,17 +84,14 @@ export function UploadForm({ user, receiptCount }: { user: User; receiptCount: n
   };
   
   const handleProcessReceipt = () => {
-    if (!file) return;
+    if (!file) {
+        toast({ title: 'No File Selected', description: 'Please select an image file to process.', variant: 'destructive'});
+        return;
+    }
 
     startExtractionTransition(async () => {
-      const reader = new FileReader();
-      reader.readAsDataURL(file);
-      reader.onloadend = async () => {
-        const dataUri = reader.result as string;
-        if (!dataUri) {
-          toast({ title: 'File Read Error', description: 'Could not read the selected file.', variant: 'destructive'});
-          return;
-        }
+      try {
+        const dataUri = await fileToDataUri(file);
         
         const result = await extractReceiptDataAction({ photoDataUri: dataUri });
 
@@ -99,6 +105,13 @@ export function UploadForm({ user, receiptCount }: { user: User; receiptCount: n
             variant: 'destructive',
           });
         }
+      } catch (error) {
+        console.error("Error during receipt processing:", error);
+        toast({
+          title: 'File Read Error',
+          description: 'There was a problem reading your file. Please try again.',
+          variant: 'destructive',
+        });
       }
     });
   };
@@ -131,13 +144,6 @@ export function UploadForm({ user, receiptCount }: { user: User; receiptCount: n
                 ...validated.data,
                 description: validated.data.description || '',
             };
-            
-            const fileToDataUri = (file: File) => new Promise<string>((resolve, reject) => {
-              const reader = new FileReader();
-              reader.onload = () => resolve(reader.result as string);
-              reader.onerror = error => reject(error);
-              reader.readAsDataURL(file);
-            });
             
             // If it's the manual entry placeholder, use it, otherwise use the actual file.
             const imageDataUri = previewUrl === 'https://placehold.co/600x400.png' 
