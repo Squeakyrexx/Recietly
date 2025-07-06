@@ -8,7 +8,7 @@ import { useToast } from '@/hooks/use-toast';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { Loader2, Sparkles, Upload, Gem, X } from 'lucide-react';
-import { type ExtractedReceiptData, CATEGORIES, TAX_CATEGORIES, type TaxCategory, type LineItem } from '@/lib/types';
+import { type ExtractedReceiptData, CATEGORIES, TAX_CATEGORIES, type TaxCategory, type LineItem, Receipt } from '@/lib/types';
 import Image from 'next/image';
 import { ConfirmationDialog } from './confirmation-dialog';
 import type { User } from 'firebase/auth';
@@ -16,8 +16,6 @@ import { z } from 'zod';
 import { Card, CardHeader, CardTitle, CardDescription, CardContent } from '@/components/ui/card';
 import { useAuth } from '@/context/auth-context';
 import { Label } from '@/components/ui/label';
-import { storage } from '@/lib/firebase';
-import { ref, uploadBytes, getDownloadURL } from 'firebase/storage';
 
 type EditableReceiptData = ExtractedReceiptData & { isBusinessExpense?: boolean; taxCategory?: TaxCategory; items?: LineItem[] };
 
@@ -49,8 +47,8 @@ const fileToDataUri = (file: File): Promise<string> => {
 export function UploadForm({ user, receiptCount }: { user: User; receiptCount: number }) {
   const [file, setFile] = useState<File | null>(null);
   const [previewUrl, setPreviewUrl] = useState<string | null>(null);
-  const [isExtracting, setIsExtracting] = useState(false);
-  const [isSaving, setIsSaving] = useState(false);
+  const [isExtracting, startExtractingTransition] = useTransition();
+  const [isSaving, startSavingTransition] = useTransition();
   const { toast } = useToast();
   const { isPremium, upgradeToPro } = useAuth();
   
@@ -66,20 +64,16 @@ export function UploadForm({ user, receiptCount }: { user: User; receiptCount: n
     };
   }, [previewUrl]);
 
-  const handleFileSelected = (selectedFile: File) => {
-    if (previewUrl) {
-      URL.revokeObjectURL(previewUrl);
-    }
-    setFile(selectedFile);
-    setPreviewUrl(URL.createObjectURL(selectedFile));
-  };
-  
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const selectedFile = e.target.files?.[0];
     if (selectedFile) {
-      handleFileSelected(selectedFile);
+        if (previewUrl && previewUrl.startsWith('blob:')) {
+            URL.revokeObjectURL(previewUrl);
+        }
+        setFile(selectedFile);
+        setPreviewUrl(URL.createObjectURL(selectedFile));
+        if (e.target) e.target.value = ""; // Reset input to allow same file selection
     }
-    if(e.target) e.target.value = ""; // Reset input to allow same file selection
   };
   
   const handleProcessReceipt = async () => {
@@ -88,44 +82,44 @@ export function UploadForm({ user, receiptCount }: { user: User; receiptCount: n
         return;
     }
 
-    setIsExtracting(true);
-    try {
-      const dataUri = await fileToDataUri(file);
-      
-      const result = await extractReceiptDataAction({ photoDataUri: dataUri });
+    startExtractingTransition(async () => {
+      try {
+        const dataUri = await fileToDataUri(file);
+        const result = await extractReceiptDataAction({ photoDataUri: dataUri });
 
-      if (result.data) {
-        setReceiptData({ ...result.data });
-        setIsConfirming(true);
-      } else {
+        if (result.data) {
+          setReceiptData({ ...result.data });
+          setIsConfirming(true);
+        } else {
+          toast({
+            title: 'Extraction Error',
+            description: result.error || 'Could not extract data from the image.',
+            variant: 'destructive',
+          });
+        }
+      } catch (error) {
+        console.error("Error during receipt processing:", error);
         toast({
-          title: 'Extraction Error',
-          description: result.error || 'Could not extract data from the image.',
+          title: 'File Read Error',
+          description: 'There was a problem reading your file. Please try again.',
           variant: 'destructive',
         });
       }
-    } catch (error) {
-      console.error("Error during receipt processing:", error);
-      toast({
-        title: 'File Read Error',
-        description: 'There was a problem reading your file. Please try again.',
-        variant: 'destructive',
-      });
-    } finally {
-        setIsExtracting(false);
-    }
+    });
   };
 
   const resetForm = () => {
       setIsConfirming(false);
       setReceiptData(null);
-      if (previewUrl) URL.revokeObjectURL(previewUrl);
+      if (previewUrl && previewUrl.startsWith('blob:')) {
+          URL.revokeObjectURL(previewUrl);
+      }
       setFile(null);
       setPreviewUrl(null);
   };
 
   const handleSave = async () => {
-    if (!receiptData || !user) {
+    if (!receiptData || !user || !previewUrl) {
       toast({ title: 'An error occurred.', variant: 'destructive' });
       return;
     }
@@ -136,50 +130,37 @@ export function UploadForm({ user, receiptCount }: { user: User; receiptCount: n
       toast({ title: 'Invalid Data', description: errorMessages, variant: 'destructive' });
       return;
     }
+    
+    startSavingTransition(async () => {
+      try {
+        const dataUri = file ? await fileToDataUri(file) : previewUrl;
+        if (!dataUri) throw new Error("Image data is missing.");
+        
+        const receiptToSave = {
+          ...validated.data,
+          description: validated.data.description || '',
+          imageUrl: dataUri,
+        };
 
-    setIsSaving(true);
-    try {
-      let imageUrl: string;
+        await addReceipt(user.uid, receiptToSave as Omit<Receipt, 'id'>);
+        await revalidateAllAction();
 
-      if (file) {
-        // Upload to Firebase Storage
-        const filePath = `receipts/${user.uid}/${Date.now()}-${file.name}`;
-        const storageRef = ref(storage, filePath);
-        await uploadBytes(storageRef, file);
-        imageUrl = await getDownloadURL(storageRef);
-      } else if (previewUrl === 'https://placehold.co/600x400.png') {
-        // Handle manual entry with placeholder
-        imageUrl = previewUrl;
-      } else {
-        throw new Error('No image file available to save.');
+        toast({
+          title: 'Success!',
+          description: 'Receipt saved successfully!',
+        });
+
+        resetForm();
+      } catch (e) {
+        const err = e as Error;
+        console.error('Error during save:', err);
+        toast({
+          title: 'Error Saving',
+          description: err.message || 'An unexpected error occurred while saving.',
+          variant: 'destructive',
+        });
       }
-
-      const receiptToSave = {
-        ...validated.data,
-        description: validated.data.description || '',
-        imageUrl: imageUrl, // Save the storage URL
-      };
-
-      await addReceipt(user.uid, receiptToSave);
-      await revalidateAllAction();
-
-      toast({
-        title: 'Success!',
-        description: 'Receipt saved successfully!',
-      });
-
-      resetForm();
-    } catch (e) {
-      const err = e as Error;
-      console.error('Error during save:', err);
-      toast({
-        title: 'Error Saving',
-        description: err.message || 'An unexpected error occurred while saving.',
-        variant: 'destructive',
-      });
-    } finally {
-      setIsSaving(false);
-    }
+    });
   };
 
 
