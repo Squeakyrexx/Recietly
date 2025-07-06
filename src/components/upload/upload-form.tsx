@@ -16,6 +16,8 @@ import { z } from 'zod';
 import { Card, CardHeader, CardTitle, CardDescription, CardContent } from '@/components/ui/card';
 import { useAuth } from '@/context/auth-context';
 import { Label } from '@/components/ui/label';
+import { getStorage, ref, uploadBytes, getDownloadURL } from 'firebase/storage';
+import { app } from '@/lib/firebase';
 
 type EditableReceiptData = ExtractedReceiptData & { isBusinessExpense?: boolean; taxCategory?: TaxCategory; items?: LineItem[] };
 
@@ -143,15 +145,23 @@ export function UploadForm({ user, receiptCount }: { user: User; receiptCount: n
     
     startSavingTransition(async () => {
       try {
+        let imageUrl = ''; // Default for manual entry
+
+        // If a file was selected, upload it to Firebase Storage
+        if (file) {
+          const storage = getStorage(app);
+          const filePath = `receipts/${user.uid}/${Date.now()}-${file.name}`;
+          const storageRef = ref(storage, filePath);
+          
+          const uploadResult = await uploadBytes(storageRef, file);
+          imageUrl = await getDownloadURL(uploadResult.ref);
+        }
+
         const receiptToSave: Omit<Receipt, 'id'> = {
           ...validated.data,
           description: validated.data.description || '',
+          imageUrl: imageUrl, // Use the URL from storage or empty string
         };
-
-        // Only add imageUrl if a file was uploaded for processing
-        if (file && previewUrl) {
-           receiptToSave.imageUrl = await fileToDataUri(file);
-        }
 
         await addReceipt(user.uid, receiptToSave);
         await revalidateAllAction();
@@ -167,7 +177,7 @@ export function UploadForm({ user, receiptCount }: { user: User; receiptCount: n
         console.error('Error during save:', err);
         toast({
           title: 'Error Saving',
-          description: err.message || 'An unexpected error occurred while saving.',
+          description: err.message || 'Could not save the receipt. Please try again.',
           variant: 'destructive',
         });
       }
@@ -186,7 +196,7 @@ export function UploadForm({ user, receiptCount }: { user: User; receiptCount: n
         isBusinessExpense: false,
         items: [],
     });
-    setPreviewUrl(null); // No placeholder
+    setPreviewUrl(null); // No preview for manual entry
     setIsConfirming(true);
   };
   
