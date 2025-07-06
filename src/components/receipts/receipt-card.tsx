@@ -20,9 +20,9 @@ export function ReceiptCard({ receipt }: { receipt: Receipt }) {
     <Card className={cn("flex flex-col overflow-hidden transition-transform duration-200 hover:scale-105 hover:shadow-lg border-t-4", categoryBorderStyle)}>
       <CardHeader className="p-0">
         <div className="relative aspect-[4/3] w-full bg-muted">
-          {receipt.imageDataUri ? (
+          {receipt.imageUrl ? (
             <Image
-              src={receipt.imageDataUri}
+              src={receipt.imageUrl}
               alt={`Receipt from ${receipt.merchant}`}
               fill
               className="object-cover"

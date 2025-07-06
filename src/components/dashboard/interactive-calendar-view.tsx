@@ -89,7 +89,7 @@ export function InteractiveCalendarView({ receipts, setAllReceipts }: Interactiv
                                     <div className="flex gap-3">
                                         <div className="relative w-20 h-20 bg-muted rounded-md flex-shrink-0">
                                             <Image
-                                                src={receipt.imageDataUri}
+                                                src={receipt.imageUrl}
                                                 alt={receipt.merchant}
                                                 fill
                                                 className="object-cover"

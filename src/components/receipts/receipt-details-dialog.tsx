@@ -63,7 +63,7 @@ const receiptSchema = z.object({
 
 const updateSchema = z.object({
     id: z.string(),
-    imageDataUri: z.string(),
+    imageUrl: z.string(),
 }).merge(receiptSchema);
 
 export function ReceiptDetailsDialog({
@@ -88,7 +88,7 @@ export function ReceiptDetailsDialog({
   
   if (!editedReceipt) return null;
 
-  const handleFieldChange = (field: keyof Omit<Receipt, 'id' | 'imageDataUri'>, value: any) => {
+  const handleFieldChange = (field: keyof Omit<Receipt, 'id' | 'imageUrl'>, value: any) => {
     setEditedReceipt((prev) => (prev ? { ...prev, [field]: value } : null));
   };
   
@@ -174,8 +174,8 @@ export function ReceiptDetailsDialog({
         <div className="overflow-y-auto py-4 -mr-6 pr-6">
             <div className="grid grid-cols-1 gap-6 md:grid-cols-2">
                 <div className="relative h-96 w-full rounded-lg overflow-hidden border">
-                    {editedReceipt.imageDataUri ? (
-                    <Image src={editedReceipt.imageDataUri} alt="Receipt preview" fill className="object-contain" />
+                    {editedReceipt.imageUrl ? (
+                    <Image src={editedReceipt.imageUrl} alt="Receipt preview" fill className="object-contain" />
                     ) : (
                     <div className="flex h-full w-full items-center justify-center bg-muted">
                         <p className="text-muted-foreground">No image preview</p>

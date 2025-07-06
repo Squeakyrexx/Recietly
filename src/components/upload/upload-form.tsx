@@ -16,6 +16,8 @@ import { z } from 'zod';
 import { Card, CardHeader, CardTitle, CardDescription, CardContent } from '@/components/ui/card';
 import { useAuth } from '@/context/auth-context';
 import { Label } from '@/components/ui/label';
+import { storage } from '@/lib/firebase';
+import { ref, uploadBytes, getDownloadURL } from 'firebase/storage';
 
 type EditableReceiptData = ExtractedReceiptData & { isBusinessExpense?: boolean; taxCategory?: TaxCategory; items?: LineItem[] };
 
@@ -124,12 +126,11 @@ export function UploadForm({ user, receiptCount }: { user: User; receiptCount: n
 
   const handleSave = async () => {
     if (!receiptData || !user) {
-        toast({ title: 'An error occurred.', variant: 'destructive'});
-        return;
-    };
-    
-    const validated = receiptDataSchema.safeParse(receiptData);
+      toast({ title: 'An error occurred.', variant: 'destructive' });
+      return;
+    }
 
+    const validated = receiptDataSchema.safeParse(receiptData);
     if (!validated.success) {
       const errorMessages = validated.error.errors.map(e => e.message).join(', ');
       toast({ title: 'Invalid Data', description: errorMessages, variant: 'destructive' });
@@ -138,59 +139,49 @@ export function UploadForm({ user, receiptCount }: { user: User; receiptCount: n
 
     setIsSaving(true);
     try {
-        const receiptToSave = {
-            ...validated.data,
-            description: validated.data.description || '',
-        };
-        
-        let imageDataUri: string;
+      let imageUrl: string;
 
-        if (file) {
-            // Dynamically import here to avoid SSR issues
-            const imageCompression = (await import('browser-image-compression')).default;
-            // If there's a file, compress it
-            const options = {
-              maxSizeMB: 0.8, // Set max size to 0.8MB to be safe for Firestore's 1MB limit
-              maxWidthOrHeight: 1920,
-              useWebWorker: true,
-            };
-            
-            const compressedFile = await imageCompression(file, options);
-            imageDataUri = await fileToDataUri(compressedFile);
+      if (file) {
+        // Upload to Firebase Storage
+        const filePath = `receipts/${user.uid}/${Date.now()}-${file.name}`;
+        const storageRef = ref(storage, filePath);
+        await uploadBytes(storageRef, file);
+        imageUrl = await getDownloadURL(storageRef);
+      } else if (previewUrl === 'https://placehold.co/600x400.png') {
+        // Handle manual entry with placeholder
+        imageUrl = previewUrl;
+      } else {
+        throw new Error('No image file available to save.');
+      }
 
-        } else if (previewUrl === 'https://placehold.co/600x400.png') {
-            // Handle manual entry case
-            imageDataUri = previewUrl;
-        } else {
-            throw new Error("No image file or placeholder available to save.");
-        }
+      const receiptToSave = {
+        ...validated.data,
+        description: validated.data.description || '',
+        imageUrl: imageUrl, // Save the storage URL
+      };
 
-        if (imageDataUri.length > 1048487) {
-            // Final check after compression
-            throw new Error("Image is still too large to save even after compression. Please try a smaller image.");
-        }
+      await addReceipt(user.uid, receiptToSave);
+      await revalidateAllAction();
 
-        await addReceipt(user.uid, { ...receiptToSave, imageDataUri });
-        await revalidateAllAction();
+      toast({
+        title: 'Success!',
+        description: 'Receipt saved successfully!',
+      });
 
-        toast({
-            title: 'Success!',
-            description: "Receipt saved successfully!",
-        });
-        
-        resetForm(); // Reset form for next upload
+      resetForm();
     } catch (e) {
-        const err = e as Error;
-        console.error("Error during save:", err);
-        toast({
-            title: 'Error Saving',
-            description: err.message || "An unexpected error occurred while compressing or saving the image.",
-            variant: 'destructive',
-        });
+      const err = e as Error;
+      console.error('Error during save:', err);
+      toast({
+        title: 'Error Saving',
+        description: err.message || 'An unexpected error occurred while saving.',
+        variant: 'destructive',
+      });
     } finally {
-        setIsSaving(false);
+      setIsSaving(false);
     }
   };
+
 
   const handleManualEntry = () => {
     resetForm();
