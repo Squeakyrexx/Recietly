@@ -16,6 +16,7 @@ import { z } from 'zod';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { Card, CardHeader, CardTitle, CardDescription, CardContent } from '@/components/ui/card';
 import { useAuth } from '@/context/auth-context';
+import { Label } from '@/components/ui/label';
 
 type EditableReceiptData = ExtractedReceiptData & { isBusinessExpense?: boolean; taxCategory?: TaxCategory; items?: LineItem[] };
 
@@ -253,21 +254,23 @@ export function UploadForm({ user, receiptCount }: { user: User; receiptCount: n
         ) : (
           // UPLOAD VIEW
           <div className="space-y-4">
-            <Card 
-                className="relative aspect-video w-full overflow-hidden flex flex-col items-center justify-center bg-muted/50 border-2 border-dashed cursor-pointer hover:bg-muted/80 transition-colors"
-                onClick={() => chooseFileInputRef.current?.click()}
-            >
-                <div className="text-center text-muted-foreground p-4">
-                    <Upload className="h-12 w-12 mx-auto mb-4" />
-                    <p className="font-semibold text-lg">Upload Receipt</p>
-                    <p className="text-sm">Click here to select a file or take a photo.</p>
-                </div>
-            </Card>
+            <Label htmlFor="choose-file" className="cursor-pointer">
+              <Card 
+                  className="relative aspect-video w-full overflow-hidden flex flex-col items-center justify-center bg-muted/50 border-2 border-dashed hover:bg-muted/80 transition-colors"
+              >
+                  <div className="text-center text-muted-foreground p-4">
+                      <Upload className="h-12 w-12 mx-auto mb-4" />
+                      <p className="font-semibold text-lg">Upload Receipt</p>
+                      <p className="text-sm">Click here to select a file or take a photo.</p>
+                  </div>
+              </Card>
+            </Label>
             <Input
                 id="choose-file"
                 type="file"
                 className="sr-only"
                 accept="image/*"
+                capture="environment"
                 onChange={handleFileChange}
                 ref={chooseFileInputRef}
             />
