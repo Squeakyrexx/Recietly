@@ -1,7 +1,7 @@
 
 'use client';
 
-import { useState, useTransition, useEffect } from 'react';
+import { useState, useEffect } from 'react';
 import { extractReceiptDataAction, revalidateAllAction } from '@/lib/actions';
 import { addReceipt } from '@/lib/mock-data';
 import { useToast } from '@/hooks/use-toast';
@@ -13,7 +13,6 @@ import Image from 'next/image';
 import { ConfirmationDialog } from './confirmation-dialog';
 import type { User } from 'firebase/auth';
 import { z } from 'zod';
-import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { Card, CardHeader, CardTitle, CardDescription, CardContent } from '@/components/ui/card';
 import { useAuth } from '@/context/auth-context';
 import { Label } from '@/components/ui/label';
@@ -48,7 +47,7 @@ const fileToDataUri = (file: File): Promise<string> => {
 export function UploadForm({ user, receiptCount }: { user: User; receiptCount: number }) {
   const [file, setFile] = useState<File | null>(null);
   const [previewUrl, setPreviewUrl] = useState<string | null>(null);
-  const [isExtracting, startExtractionTransition] = useTransition();
+  const [isExtracting, setIsExtracting] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
   const { toast } = useToast();
   const { isPremium, upgradeToPro } = useAuth();
@@ -81,37 +80,38 @@ export function UploadForm({ user, receiptCount }: { user: User; receiptCount: n
     if(e.target) e.target.value = ""; // Reset input to allow same file selection
   };
   
-  const handleProcessReceipt = () => {
+  const handleProcessReceipt = async () => {
     if (!file) {
         toast({ title: 'No File Selected', description: 'Please select an image file to process.', variant: 'destructive'});
         return;
     }
 
-    startExtractionTransition(async () => {
-      try {
-        const dataUri = await fileToDataUri(file);
-        
-        const result = await extractReceiptDataAction({ photoDataUri: dataUri });
+    setIsExtracting(true);
+    try {
+      const dataUri = await fileToDataUri(file);
+      
+      const result = await extractReceiptDataAction({ photoDataUri: dataUri });
 
-        if (result.data) {
-          setReceiptData({ ...result.data });
-          setIsConfirming(true);
-        } else {
-          toast({
-            title: 'Extraction Error',
-            description: result.error || 'Could not extract data from the image.',
-            variant: 'destructive',
-          });
-        }
-      } catch (error) {
-        console.error("Error during receipt processing:", error);
+      if (result.data) {
+        setReceiptData({ ...result.data });
+        setIsConfirming(true);
+      } else {
         toast({
-          title: 'File Read Error',
-          description: 'There was a problem reading your file. Please try again.',
+          title: 'Extraction Error',
+          description: result.error || 'Could not extract data from the image.',
           variant: 'destructive',
         });
       }
-    });
+    } catch (error) {
+      console.error("Error during receipt processing:", error);
+      toast({
+        title: 'File Read Error',
+        description: 'There was a problem reading your file. Please try again.',
+        variant: 'destructive',
+      });
+    } finally {
+        setIsExtracting(false);
+    }
   };
 
   const resetForm = () => {
