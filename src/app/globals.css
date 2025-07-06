@@ -10,14 +10,14 @@
     --card-foreground: 222.2 84% 4.9%;
     --popover: 0 0% 100%;
     --popover-foreground: 222.2 84% 4.9%;
-    --primary: 145 62% 30%;
+    --primary: 147 50% 47%;
     --primary-foreground: 0 0% 100%;
     --secondary: 210 40% 96.1%;
     --secondary-foreground: 222.2 47.4% 11.2%;
     --muted: 210 40% 96.1%;
     --muted-foreground: 215.4 16.3% 46.9%;
-    --accent: 147 50% 47%;
-    --accent-foreground: 222.2 47.4% 11.2%;
+    --accent: 120 61% 34%;
+    --accent-foreground: 210 40% 98%;
     --destructive: 0 84.2% 60.2%;
     --destructive-foreground: 210 40% 98%;
     --success: 140 50% 45%;
@@ -26,21 +26,21 @@
     --warning-foreground: 210 40% 98%;
     --border: 147 20% 85%;
     --input: 147 20% 90%;
-    --ring: 145 62% 30%;
+    --ring: 147 50% 47%;
     --radius: 0.5rem;
-    --chart-1: 145 62% 30%;
-    --chart-2: 147 50% 47%;
+    --chart-1: 147 50% 47%;
+    --chart-2: 120 61% 34%;
     --chart-3: 150 55% 60%;
     --chart-4: 140 40% 50%;
     --chart-5: 160 30% 70%;
     --sidebar-background: 0 0% 100%;
     --sidebar-foreground: 222.2 84% 4.9%;
-    --sidebar-primary: 145 62% 30%;
+    --sidebar-primary: 147 50% 47%;
     --sidebar-primary-foreground: 0 0% 100%;
     --sidebar-accent: 147 10% 95%;
     --sidebar-accent-foreground: 222.2 47.4% 11.2%;
     --sidebar-border: 147 20% 85%;
-    --sidebar-ring: 145 62% 30%;
+    --sidebar-ring: 147 50% 47%;
 
     /* Category Colors - Light Mode */
     --category-groceries: 217 91% 60%; /* Blue */
@@ -64,7 +64,7 @@
     --secondary-foreground: 145 10% 85%;
     --muted: 145 15% 20%;
     --muted-foreground: 145 10% 60%;
-    --accent: 145 15% 25%;
+    --accent: 120 30% 30%;
     --accent-foreground: 145 10% 90%;
     --destructive: 0 62.8% 30.6%;
     --destructive-foreground: 210 40% 98%;
@@ -76,7 +76,7 @@
     --input: 145 15% 25%;
     --ring: 147 50% 47%;
     --chart-1: 147 50% 47%;
-    --chart-2: 150 55% 60%;
+    --chart-2: 120 30% 30%;
     --chart-3: 140 40% 50%;
     --chart-4: 160 30% 70%;
     --chart-5: 145 62% 30%;
