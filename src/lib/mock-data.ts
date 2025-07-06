@@ -52,18 +52,18 @@ export const addReceipt = async (userId: string, receipt: Omit<Receipt, 'id'>) =
   const d = new Date(receipt.date.replace(/-/g, '/'));
   const isValidDate = !isNaN(d.getTime());
 
-  const newReceipt: Omit<Receipt, 'id' | 'taxCategory'> & { taxCategory?: TaxCategory } = {
-    ...receipt,
-    date: isValidDate ? receipt.date : new Date().toISOString().split('T')[0],
-    isBusinessExpense: receipt.isBusinessExpense || false,
-    // Ensure amount is a number before saving
+  // **FIX:** Explicitly create the object to be saved, ensuring ONLY text data is included.
+  // This provides a second layer of defense against saving image data.
+  const newReceipt: Omit<Receipt, 'id'> = {
+    merchant: receipt.merchant,
     amount: Number(receipt.amount || 0),
+    date: isValidDate ? receipt.date : new Date().toISOString().split('T')[0],
+    category: receipt.category,
+    description: receipt.description || '',
+    isBusinessExpense: receipt.isBusinessExpense || false,
+    taxCategory: receipt.isBusinessExpense ? receipt.taxCategory : undefined,
     items: receipt.items || [],
   };
-
-  if (!newReceipt.isBusinessExpense) {
-    delete newReceipt.taxCategory;
-  }
 
   const receiptsCollection = collection(db, 'users', userId, 'receipts');
   await addDoc(receiptsCollection, newReceipt);

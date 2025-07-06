@@ -163,12 +163,19 @@ export function UploadForm({ user, receiptCount }: { user: User; receiptCount: n
     
     startSavingTransition(async () => {
       try {
-        // The image is no longer saved, only the text data.
+        // **FIX:** Explicitly create the object to be saved, ensuring ONLY text data is included.
+        // This prevents any image data from being sent to the database.
         const receiptToSave: Omit<Receipt, 'id'> = {
-          ...validated.data,
+          merchant: validated.data.merchant,
+          amount: validated.data.amount,
+          date: validated.data.date,
+          category: validated.data.category,
           description: validated.data.description || '',
+          isBusinessExpense: validated.data.isBusinessExpense || false,
+          taxCategory: validated.data.taxCategory,
+          items: validated.data.items || [],
         };
-
+        
         await addReceipt(user.uid, receiptToSave);
         await revalidateAllAction();
 
