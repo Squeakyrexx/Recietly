@@ -189,7 +189,7 @@ export default function DashboardPage() {
   const showComparison = dateRange !== 'all-time';
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-8">
       <header>
         <h1 className="font-headline text-3xl font-bold tracking-tight">Dashboard</h1>
         <p className="text-muted-foreground">A summary of your spending habits.</p>

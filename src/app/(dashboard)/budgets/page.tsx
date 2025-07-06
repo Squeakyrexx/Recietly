@@ -68,7 +68,7 @@ export default function BudgetsPage() {
   const isLoading = !initialBudgets || !spendingThisMonth;
 
   return (
-    <div className="space-y-6 max-w-4xl mx-auto">
+    <div className="space-y-8 max-w-4xl mx-auto">
       <header>
         <h1 className="font-headline text-3xl font-bold tracking-tight">Budgets</h1>
         <p className="text-muted-foreground">Set and manage your monthly spending budgets for each category.</p>

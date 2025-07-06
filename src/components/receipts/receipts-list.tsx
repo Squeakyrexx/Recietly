@@ -142,7 +142,7 @@ export function ReceiptsList({ initialReceipts }: { initialReceipts: Receipt[] }
         onReceiptDelete={handleReceiptDelete}
       />
 
-      <div className="space-y-6">
+      <div className="space-y-8">
         <Tabs value={activeTab} onValueChange={setActiveTab}>
             <TabsList>
                 <TabsTrigger value="all">

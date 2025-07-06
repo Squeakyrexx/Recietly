@@ -38,7 +38,7 @@ export default function ReceiptsPage() {
   }, [user, loading, toast]);
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-8">
       <header className="flex flex-col items-start gap-4 sm:flex-row sm:items-center sm:justify-between">
         <div>
           <h1 className="font-headline text-3xl font-bold tracking-tight">My Receipts</h1>

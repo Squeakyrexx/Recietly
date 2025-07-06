@@ -65,7 +65,7 @@ export default function UploadPage() {
   const scansLeft = SCAN_LIMIT - (receiptCount ?? 0);
   
   return (
-    <div className="mx-auto max-w-2xl space-y-6">
+    <div className="mx-auto max-w-2xl space-y-8">
       <header>
         <h1 className="font-headline text-3xl font-bold tracking-tight">Upload Receipt</h1>
         <p className="text-muted-foreground">Add a new expense by uploading a receipt image.</p>
