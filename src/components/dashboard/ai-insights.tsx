@@ -34,9 +34,9 @@ export function AiInsights({ receiptsForInsight }: { receiptsForInsight: Receipt
       setError(null);
       setInsight(null);
       try {
-        // We need to remove the image data before sending it to the AI.
-        // It's very large and not needed for this flow, and can cause errors.
-        const dataForInsight = receiptsForInsight.map(({ imageDataUri, ...rest }) => rest);
+        // We need to remove image URLs before sending to the AI.
+        // It's not needed for this flow and can cause errors.
+        const dataForInsight = receiptsForInsight.map(({ imageUrl, ...rest }) => rest);
         const spendingData = JSON.stringify(dataForInsight);
         const result = await generateSpendingInsightsAction(spendingData);
 
