@@ -1,4 +1,3 @@
-
 'use client';
 
 import Link from 'next/link';
@@ -10,6 +9,7 @@ import {
   SidebarMenuItem,
   SidebarMenuButton,
   SidebarFooter,
+  SidebarSeparator,
 } from '@/components/ui/sidebar';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Button } from '@/components/ui/button';
@@ -34,7 +34,6 @@ const navItems = [
   { href: '/budgets', icon: PiggyBank, label: 'Budgets' },
   { href: '/tax-report', icon: Landmark, label: 'Tax Report' },
   { href: '/upload', icon: Upload, label: 'Upload' },
-  { href: '/settings', icon: Settings, label: 'Settings' },
 ];
 
 export function SidebarNav() {
@@ -76,24 +75,39 @@ export function SidebarNav() {
           ))}
         </SidebarMenu>
       </SidebarContent>
-      <SidebarFooter className="gap-4">
+      <SidebarFooter className="gap-2">
         {!isPremium && (
-            <Card className="bg-primary/10 text-center">
-                <CardHeader className="p-4">
-                    <CardTitle className="text-base flex items-center justify-center gap-2">
-                        <Gem className="text-primary"/> Upgrade to Pro
-                    </CardTitle>
-                    <CardDescription>
-                        Unlock advanced features and get unlimited receipt uploads.
-                    </CardDescription>
-                </CardHeader>
-                <CardContent className="p-4 pt-0">
-                    <Link href="/settings">
-                        <Button className="w-full" size="sm">Upgrade</Button>
-                    </Link>
-                </CardContent>
-            </Card>
+            <div className="px-2">
+                <Card className="bg-primary/10 text-center">
+                    <CardHeader className="p-4">
+                        <CardTitle className="text-base flex items-center justify-center gap-2">
+                            <Gem className="text-primary"/> Upgrade to Pro
+                        </CardTitle>
+                        <CardDescription>
+                            Unlock advanced features and get unlimited receipt uploads.
+                        </CardDescription>
+                    </CardHeader>
+                    <CardContent className="p-4 pt-0">
+                        <Link href="/settings">
+                            <Button className="w-full" size="sm">Upgrade</Button>
+                        </Link>
+                    </CardContent>
+                </Card>
+            </div>
         )}
+        <div className="p-2 pt-0">
+          <SidebarMenu className="p-0">
+            <SidebarMenuItem>
+              <Link href="/settings">
+                <SidebarMenuButton isActive={pathname.startsWith('/settings')}>
+                  <Settings />
+                  <span>Settings</span>
+                </SidebarMenuButton>
+              </Link>
+            </SidebarMenuItem>
+          </SidebarMenu>
+        </div>
+        <SidebarSeparator />
         <div className="flex items-center gap-2 p-2">
           <Avatar className="h-8 w-8">
             <AvatarImage src={user?.photoURL || "https://placehold.co/100x100.png"} alt="User" />
