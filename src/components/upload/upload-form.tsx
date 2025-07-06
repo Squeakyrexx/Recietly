@@ -76,9 +76,9 @@ export function UploadForm({ user, receiptCount }: { user: User; receiptCount: n
   };
   
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (file) {
-      handleFileSelected(file);
+    const selectedFile = e.target.files?.[0];
+    if (selectedFile) {
+      handleFileSelected(selectedFile);
     }
     if(e.target) e.target.value = ""; // Reset input to allow same file selection
   };
