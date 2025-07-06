@@ -13,6 +13,7 @@ import { Skeleton } from '@/components/ui/skeleton';
 import { useToast } from '@/hooks/use-toast';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { subMonths, startOfMonth, endOfMonth, startOfYear, endOfYear, subYears, endOfToday, subDays } from 'date-fns';
+import { SpendingCalendar } from '@/components/dashboard/spending-calendar';
 
 type DateRange = 'this-month' | 'last-3-months' | 'this-year' | 'all-time';
 
@@ -132,23 +133,25 @@ export default function DashboardPage() {
     }
   }, [allReceipts, dateRange]);
 
-  const spendingThisMonth = useMemo(() => {
-    if (!allReceipts) return null;
+  const { spendingThisMonth, receiptsThisMonth } = useMemo(() => {
+    if (!allReceipts) return { spendingThisMonth: null, receiptsThisMonth: null };
     
     const currentMonthStart = startOfMonth(new Date());
-    const receiptsThisMonth = allReceipts.filter(r => new Date(r.date.replace(/-/g, '/')) >= currentMonthStart);
+    const receiptsInMonth = allReceipts.filter(r => new Date(r.date.replace(/-/g, '/')) >= currentMonthStart);
     
-    const spendingMap = receiptsThisMonth.reduce((acc, receipt) => {
+    const spendingMap = receiptsInMonth.reduce((acc, receipt) => {
       const category = receipt.category;
       const amount = Number(receipt.amount) || 0;
       acc[category] = (acc[category] || 0) + amount;
       return acc;
     }, {} as { [key in Category]?: number });
     
-    return Object.entries(spendingMap).map(([category, total]) => ({
+    const spendingByCategory = Object.entries(spendingMap).map(([category, total]) => ({
         category: category as Category,
         total: parseFloat(total!.toFixed(2)),
     }));
+    
+    return { spendingThisMonth: spendingByCategory, receiptsThisMonth: receiptsInMonth };
 
   }, [allReceipts]);
 
@@ -178,7 +181,7 @@ export default function DashboardPage() {
     };
   }, [user, loading, toast]);
 
-  const isLoading = !filteredData || !budgets || !spendingThisMonth;
+  const isLoading = !filteredData || !budgets || !spendingThisMonth || !receiptsThisMonth;
   const cardTitle = `Total Spending (${dateRangeOptions.find(o => o.value === dateRange)?.label})`;
   const showComparison = dateRange !== 'all-time';
 
@@ -212,6 +215,7 @@ export default function DashboardPage() {
             <div className="lg:col-span-2"><Skeleton className="h-[400px] rounded-lg" /></div>
             <div className="lg:col-span-1"><Skeleton className="h-[400px] rounded-lg" /></div>
             <div className="lg:col-span-3"><Skeleton className="h-48 rounded-lg" /></div>
+            <div className="lg:col-span-3"><Skeleton className="h-[400px] rounded-lg" /></div>
           </>
         ) : (
           <>
@@ -230,6 +234,9 @@ export default function DashboardPage() {
             </div>
             <div className="lg:col-span-1">
               <TopSpendingCard data={filteredData.spendingByCategory} />
+            </div>
+            <div className="lg:col-span-3">
+                <SpendingCalendar receipts={receiptsThisMonth} month={new Date()} />
             </div>
             <div className="lg:col-span-3">
               <AiInsights receiptsForInsight={filteredData.receipts} />

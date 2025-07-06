@@ -106,4 +106,24 @@
   body {
     @apply bg-background text-foreground;
   }
+  
+  /* Custom Calendar Day Styles */
+  .rdp-button:not([disabled]):hover { @apply bg-accent; }
+  
+  .rdp-cell.spending-low .rdp-button { background-color: hsl(var(--primary) / 0.15); color: hsl(var(--foreground)); }
+  .rdp-cell.spending-medium .rdp-button { background-color: hsl(var(--primary) / 0.3); color: hsl(var(--primary-foreground)); }
+  .rdp-cell.spending-high .rdp-button { background-color: hsl(var(--primary) / 0.5); color: hsl(var(--primary-foreground)); }
+  .rdp-cell.spending-very-high .rdp-button { background-color: hsl(var(--primary) / 0.7); color: hsl(var(--primary-foreground)); }
+
+  .dark .rdp-cell.spending-low .rdp-button { color: hsl(var(--foreground)); }
+  .dark .rdp-cell.spending-medium .rdp-button { color: hsl(var(--foreground)); }
+
+  .rdp-cell.spending-low .rdp-button:hover { background-color: hsl(var(--primary) / 0.25); }
+  .rdp-cell.spending-medium .rdp-button:hover { background-color: hsl(var(--primary) / 0.4); }
+  .rdp-cell.spending-high .rdp-button:hover { background-color: hsl(var(--primary) / 0.6); }
+  .rdp-cell.spending-very-high .rdp-button:hover { background-color: hsl(var(--primary) / 0.8); }
+
+  /* Ensure day text inside our custom tooltip trigger is visible */
+  .rdp-day_outside .rdp-button { color: hsl(var(--muted-foreground)); }
+  .rdp-button span { @apply w-full h-full flex items-center justify-center; }
 }
