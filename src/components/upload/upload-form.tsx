@@ -1,7 +1,7 @@
 
 'use client';
 
-import { useRef, useState, useTransition, useEffect } from 'react';
+import { useState, useTransition, useEffect } from 'react';
 import { extractReceiptDataAction, revalidateAllAction } from '@/lib/actions';
 import { addReceipt } from '@/lib/mock-data';
 import { useToast } from '@/hooks/use-toast';
@@ -55,8 +55,6 @@ export function UploadForm({ user, receiptCount }: { user: User; receiptCount: n
   
   const [isConfirming, setIsConfirming] = useState(false);
   const [receiptData, setReceiptData] = useState<EditableReceiptData | null>(null);
-
-  const chooseFileInputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
     // Cleanup object URL to prevent memory leaks
@@ -278,7 +276,6 @@ export function UploadForm({ user, receiptCount }: { user: User; receiptCount: n
                 accept="image/*"
                 capture="environment"
                 onChange={handleFileChange}
-                ref={chooseFileInputRef}
             />
           </div>
         )}
