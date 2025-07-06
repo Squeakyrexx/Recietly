@@ -87,13 +87,23 @@ export function UploadForm({ user, receiptCount }: { user: User; receiptCount: n
         const dataUri = await fileToDataUri(file);
         const result = await extractReceiptDataAction({ photoDataUri: dataUri });
 
-        if (result.data) {
-          setReceiptData({ ...result.data });
+        if (result && result.data) {
+          // Create a complete object to ensure the confirmation dialog receives all expected props.
+          setReceiptData({
+            merchant: result.data.merchant || '',
+            amount: result.data.amount || 0,
+            date: result.data.date || new Date().toISOString().split('T')[0],
+            category: result.data.category || 'Other',
+            description: result.data.description || '',
+            isBusinessExpense: result.data.isBusinessExpense || false,
+            taxCategory: result.data.taxCategory,
+            items: result.data.items || [],
+          });
           setIsConfirming(true);
         } else {
           toast({
             title: 'Extraction Error',
-            description: result.error || 'Could not extract data from the image.',
+            description: result?.error || 'Could not extract data from the image.',
             variant: 'destructive',
           });
         }
