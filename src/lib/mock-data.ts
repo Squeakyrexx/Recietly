@@ -184,7 +184,6 @@ export const listenToReceipts = (
         date: data.date,
         category: data.category,
         description: data.description,
-        imageUrl: data.imageUrl,
         isBusinessExpense: data.isBusinessExpense,
         taxCategory: data.taxCategory,
         items: data.items,

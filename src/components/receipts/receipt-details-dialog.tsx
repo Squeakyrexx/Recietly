@@ -2,7 +2,6 @@
 'use client';
 
 import { useState, useEffect, useTransition } from 'react';
-import Image from 'next/image';
 import { Button } from '@/components/ui/button';
 import {
   Dialog,
@@ -63,7 +62,6 @@ const receiptSchema = z.object({
 
 const updateSchema = z.object({
     id: z.string(),
-    imageUrl: z.string().optional(),
 }).merge(receiptSchema);
 
 export function ReceiptDetailsDialog({
@@ -88,7 +86,7 @@ export function ReceiptDetailsDialog({
   
   if (!editedReceipt) return null;
 
-  const handleFieldChange = (field: keyof Omit<Receipt, 'id' | 'imageUrl'>, value: any) => {
+  const handleFieldChange = (field: keyof Omit<Receipt, 'id'>, value: any) => {
     setEditedReceipt((prev) => (prev ? { ...prev, [field]: value } : null));
   };
   
@@ -164,140 +162,129 @@ export function ReceiptDetailsDialog({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-sm md:max-w-2xl lg:max-w-4xl grid-rows-[auto_minmax(0,1fr)_auto] grid h-full max-h-[90vh]">
+      <DialogContent className="max-w-md">
         <DialogHeader>
-          <DialogTitle>Receipt Details</DialogTitle>
+          <DialogTitle>Edit Receipt Details</DialogTitle>
           <DialogDescription>
-            View or edit the details for this receipt.
+            Edit the details for this receipt.
           </DialogDescription>
         </DialogHeader>
-        <div className="overflow-y-auto py-4 -mr-6 pr-6">
-            <div className="grid grid-cols-1 gap-6 md:grid-cols-2">
-                <div className="relative h-96 w-full rounded-lg overflow-hidden border">
-                    {editedReceipt.imageUrl ? (
-                    <Image src={editedReceipt.imageUrl} alt="Receipt preview" fill className="object-contain" />
-                    ) : (
-                    <div className="flex h-full w-full items-center justify-center bg-muted">
-                        <p className="text-muted-foreground">No image available</p>
-                    </div>
-                    )}
+        <ScrollArea className="max-h-[60vh] -mr-6 pr-6">
+            <div className="space-y-4 py-4">
+                <div className="space-y-1.5">
+                <Label htmlFor="edit-merchant">Merchant</Label>
+                <Input
+                    id="edit-merchant"
+                    value={editedReceipt.merchant}
+                    onChange={(e) => handleFieldChange('merchant', e.target.value)}
+                />
                 </div>
-                <div className="space-y-4">
-                    <div className="space-y-1.5">
-                    <Label htmlFor="edit-merchant">Merchant</Label>
-                    <Input
-                        id="edit-merchant"
-                        value={editedReceipt.merchant}
-                        onChange={(e) => handleFieldChange('merchant', e.target.value)}
-                    />
-                    </div>
-                    <div className="space-y-1.5">
-                    <Label htmlFor="edit-amount">Amount</Label>
-                    <Input
-                        id="edit-amount"
-                        type="number"
-                        step="0.01"
-                        value={editedReceipt.amount}
-                        onChange={(e) => handleFieldChange('amount', parseFloat(e.target.value) || 0)}
-                    />
-                    </div>
-                    <div className="space-y-1.5">
-                    <Label htmlFor="edit-date">Date</Label>
-                    <Input
-                        id="edit-date"
-                        type="date"
-                        value={editedReceipt.date.split('T')[0]} // Show only date part
-                        onChange={(e) => handleFieldChange('date', e.target.value)}
-                    />
-                    </div>
-                    <div className="space-y-1.5">
-                    <Label htmlFor="edit-category">Category</Label>
-                    <Select
-                        value={editedReceipt.category}
-                        onValueChange={(value) => handleFieldChange('category', value)}
-                    >
-                        <SelectTrigger id="edit-category">
-                        <SelectValue placeholder="Select a category" />
-                        </SelectTrigger>
-                        <SelectContent>
-                        {CATEGORIES.map((category) => (
-                            <SelectItem key={category} value={category}>
-                            {category}
-                            </SelectItem>
-                        ))}
-                        </SelectContent>
-                    </Select>
-                    </div>
-                    <div className="space-y-1.5">
-                    <Label htmlFor="edit-description">Description</Label>
-                    <Textarea
-                        id="edit-description"
-                        value={editedReceipt.description}
-                        onChange={(e) => handleFieldChange('description', e.target.value)}
-                    />
-                    </div>
-                    {editedReceipt.items && editedReceipt.items.length > 0 && (
-                        <div className="space-y-2">
-                            <Label className="flex items-center gap-2"><ClipboardList className="h-4 w-4" /> Itemization</Label>
-                            <ScrollArea className="h-56 rounded-md border">
-                            <Table>
-                                <TableHeader>
-                                <TableRow>
-                                    <TableHead>Item</TableHead>
-                                    <TableHead className="text-right">Price</TableHead>
+                <div className="space-y-1.5">
+                <Label htmlFor="edit-amount">Amount</Label>
+                <Input
+                    id="edit-amount"
+                    type="number"
+                    step="0.01"
+                    value={editedReceipt.amount}
+                    onChange={(e) => handleFieldChange('amount', parseFloat(e.target.value) || 0)}
+                />
+                </div>
+                <div className="space-y-1.5">
+                <Label htmlFor="edit-date">Date</Label>
+                <Input
+                    id="edit-date"
+                    type="date"
+                    value={editedReceipt.date.split('T')[0]} // Show only date part
+                    onChange={(e) => handleFieldChange('date', e.target.value)}
+                />
+                </div>
+                <div className="space-y-1.5">
+                <Label htmlFor="edit-category">Category</Label>
+                <Select
+                    value={editedReceipt.category}
+                    onValueChange={(value) => handleFieldChange('category', value)}
+                >
+                    <SelectTrigger id="edit-category">
+                    <SelectValue placeholder="Select a category" />
+                    </SelectTrigger>
+                    <SelectContent>
+                    {CATEGORIES.map((category) => (
+                        <SelectItem key={category} value={category}>
+                        {category}
+                        </SelectItem>
+                    ))}
+                    </SelectContent>
+                </Select>
+                </div>
+                <div className="space-y-1.5">
+                <Label htmlFor="edit-description">Description</Label>
+                <Textarea
+                    id="edit-description"
+                    value={editedReceipt.description}
+                    onChange={(e) => handleFieldChange('description', e.target.value)}
+                />
+                </div>
+                {editedReceipt.items && editedReceipt.items.length > 0 && (
+                    <div className="space-y-2">
+                        <Label className="flex items-center gap-2"><ClipboardList className="h-4 w-4" /> Itemization</Label>
+                        <div className="h-56 rounded-md border">
+                        <Table>
+                            <TableHeader>
+                            <TableRow>
+                                <TableHead>Item</TableHead>
+                                <TableHead className="text-right">Price</TableHead>
+                            </TableRow>
+                            </TableHeader>
+                            <TableBody className="[&_tr:nth-child(even)]:bg-muted/30">
+                            {editedReceipt.items.map((item, index) => (
+                                <TableRow key={index} className="[&>td]:py-2">
+                                <TableCell className="font-medium truncate">{item.name}</TableCell>
+                                <TableCell className="text-right">${item.price.toFixed(2)}</TableCell>
                                 </TableRow>
-                                </TableHeader>
-                                <TableBody className="[&_tr:nth-child(even)]:bg-muted/30">
-                                {editedReceipt.items.map((item, index) => (
-                                    <TableRow key={index} className="[&>td]:py-2">
-                                    <TableCell className="font-medium truncate">{item.name}</TableCell>
-                                    <TableCell className="text-right">${item.price.toFixed(2)}</TableCell>
-                                    </TableRow>
-                                ))}
-                                </TableBody>
-                            </Table>
-                            </ScrollArea>
-                        </div>
-                    )}
-                    <div className="flex items-center space-x-3 rounded-md border p-3">
-                    <Briefcase className="h-5 w-5 text-muted-foreground flex-shrink-0" />
-                    <div className="flex-1">
-                        <Label htmlFor="edit-is-business-expense" className="font-medium cursor-pointer">
-                        Business Expense
-                        </Label>
-                        <p className="text-xs text-muted-foreground">
-                        Mark this if it's a tax-deductible expense.
-                        </p>
-                    </div>
-                    <Switch
-                        id="edit-is-business-expense"
-                        checked={!!editedReceipt.isBusinessExpense}
-                        onCheckedChange={handleBusinessExpenseToggle}
-                    />
-                    </div>
-                    {editedReceipt.isBusinessExpense && (
-                    <div className="space-y-1.5">
-                        <Label htmlFor="edit-tax-category">Tax Category</Label>
-                        <Select
-                        value={editedReceipt.taxCategory}
-                        onValueChange={(value) => handleFieldChange('taxCategory', value)}
-                        >
-                        <SelectTrigger id="edit-tax-category">
-                            <SelectValue placeholder="Select a tax category" />
-                        </SelectTrigger>
-                        <SelectContent>
-                            {TAX_CATEGORIES.map((category) => (
-                            <SelectItem key={category} value={category}>
-                                {category}
-                            </SelectItem>
                             ))}
-                        </SelectContent>
-                        </Select>
+                            </TableBody>
+                        </Table>
+                        </div>
                     </div>
-                    )}
+                )}
+                <div className="flex items-center space-x-3 rounded-md border p-3">
+                <Briefcase className="h-5 w-5 text-muted-foreground flex-shrink-0" />
+                <div className="flex-1">
+                    <Label htmlFor="edit-is-business-expense" className="font-medium cursor-pointer">
+                    Business Expense
+                    </Label>
+                    <p className="text-xs text-muted-foreground">
+                    Mark this if it's a tax-deductible expense.
+                    </p>
                 </div>
+                <Switch
+                    id="edit-is-business-expense"
+                    checked={!!editedReceipt.isBusinessExpense}
+                    onCheckedChange={handleBusinessExpenseToggle}
+                />
+                </div>
+                {editedReceipt.isBusinessExpense && (
+                <div className="space-y-1.5">
+                    <Label htmlFor="edit-tax-category">Tax Category</Label>
+                    <Select
+                    value={editedReceipt.taxCategory}
+                    onValueChange={(value) => handleFieldChange('taxCategory', value)}
+                    >
+                    <SelectTrigger id="edit-tax-category">
+                        <SelectValue placeholder="Select a tax category" />
+                    </SelectTrigger>
+                    <SelectContent>
+                        {TAX_CATEGORIES.map((category) => (
+                        <SelectItem key={category} value={category}>
+                            {category}
+                        </SelectItem>
+                        ))}
+                    </SelectContent>
+                    </Select>
+                </div>
+                )}
             </div>
-        </div>
+        </ScrollArea>
         <DialogFooter className='sm:justify-between pt-4 border-t'>
           <AlertDialog>
             <AlertDialogTrigger asChild>

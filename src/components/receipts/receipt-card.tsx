@@ -4,7 +4,7 @@ import { type Receipt } from '@/lib/types';
 import { Badge } from '@/components/ui/badge';
 import { getIconForCategory } from '@/components/icons';
 import { format } from 'date-fns';
-import { FileImage, Briefcase, ClipboardList } from 'lucide-react';
+import { FileText, Briefcase, ClipboardList } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { getCategoryBorderStyle } from '@/lib/utils';
 
@@ -18,31 +18,14 @@ export function ReceiptCard({ receipt }: { receipt: Receipt }) {
 
   return (
     <Card className={cn("flex flex-col overflow-hidden transition-transform duration-200 hover:scale-105 hover:shadow-lg border-t-4", categoryBorderStyle)}>
-      <CardHeader className="p-0">
-        <div className="relative aspect-[4/3] w-full bg-muted">
-          {receipt.imageUrl ? (
-            <Image
-              src={receipt.imageUrl}
-              alt={`Receipt from ${receipt.merchant}`}
-              fill
-              className="object-cover"
-              sizes="(max-width: 640px) 100vw, (max-width: 768px) 50vw, 33vw"
-            />
-          ) : (
-            <div className="flex h-full w-full items-center justify-center text-muted-foreground">
-              <FileImage className="h-16 w-16" />
-            </div>
-          )}
-        </div>
-      </CardHeader>
-      <CardContent className="flex-1 p-4">
+      <CardContent className="flex-1 p-4 space-y-2">
         <div className="flex items-start justify-between gap-2">
             <h3 className="font-semibold">{receipt.merchant}</h3>
             <Badge variant="secondary" className="whitespace-nowrap flex-shrink-0">
                 ${receipt.amount.toFixed(2)}
             </Badge>
         </div>
-        <p className="text-sm text-muted-foreground line-clamp-2">{receipt.description}</p>
+        <p className="text-sm text-muted-foreground line-clamp-2">{receipt.description || 'No description provided.'}</p>
       </CardContent>
       <CardFooter className="flex items-center justify-between p-4 pt-0 text-xs text-muted-foreground">
         <div className="flex items-center gap-2">

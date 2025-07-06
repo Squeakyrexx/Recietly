@@ -2,7 +2,6 @@
 'use client';
 
 import { useState, useMemo } from 'react';
-import Image from 'next/image';
 import { Card, CardContent } from '@/components/ui/card';
 import { Calendar } from '@/components/ui/calendar';
 import { type Receipt } from '@/lib/types';
@@ -10,7 +9,8 @@ import { format, isSameDay } from 'date-fns';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Badge } from '@/components/ui/badge';
 import { ReceiptDetailsDialog } from '@/components/receipts/receipt-details-dialog';
-import { FileImage } from 'lucide-react';
+import { FileText } from 'lucide-react';
+import { getIconForCategory } from '../icons';
 
 interface InteractiveCalendarViewProps {
   receipts: Receipt[];
@@ -84,23 +84,14 @@ export function InteractiveCalendarView({ receipts, setAllReceipts }: Interactiv
               <ScrollArea className="h-[520px] pr-4 -mr-4">
                   {selectedDay && receiptsForSelectedDay.length > 0 ? (
                       <div className="space-y-4">
-                          {receiptsForSelectedDay.map(receipt => (
+                          {receiptsForSelectedDay.map(receipt => {
+                            const Icon = getIconForCategory(receipt.category);
+                            return (
                               <Card key={receipt.id} className="overflow-hidden cursor-pointer transition-shadow hover:shadow-lg" onClick={() => setSelectedReceipt(receipt)}>
                                   <CardContent className="p-3">
                                     <div className="flex gap-3">
-                                        <div className="relative w-20 h-20 bg-muted rounded-md flex-shrink-0">
-                                            {receipt.imageUrl ? (
-                                                <Image
-                                                    src={receipt.imageUrl}
-                                                    alt={receipt.merchant}
-                                                    fill
-                                                    className="object-cover"
-                                                />
-                                            ) : (
-                                                <div className="flex h-full w-full items-center justify-center text-muted-foreground">
-                                                    <FileImage className="h-10 w-10" />
-                                                </div>
-                                            )}
+                                        <div className="w-16 h-16 bg-muted rounded-md flex-shrink-0 flex items-center justify-center">
+                                            <Icon className="h-8 w-8 text-muted-foreground" />
                                         </div>
                                         <div className="flex-grow space-y-1">
                                             <div className="flex justify-between items-start">
@@ -114,7 +105,7 @@ export function InteractiveCalendarView({ receipts, setAllReceipts }: Interactiv
                                     </div>
                                   </CardContent>
                               </Card>
-                          ))}
+                          )})}
                       </div>
                   ) : (
                       <div className="flex items-center justify-center h-full text-muted-foreground text-center">

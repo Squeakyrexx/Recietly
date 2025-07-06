@@ -76,45 +76,48 @@ export function UploadForm({ user, receiptCount }: { user: User; receiptCount: n
         if (e.target) e.target.value = ""; // Reset input to allow same file selection
     }
   };
-
-  const compressAndGetDataUri = async (inputFile: File): Promise<string> => {
+  
+  const compressImage = async (inputFile: File): Promise<File> => {
     try {
       const options = {
-        maxSizeMB: 0.7,
+        maxSizeMB: 0.7, // Target size under 1MB DB limit
         maxWidthOrHeight: 1920,
         useWebWorker: true,
       };
-      const compressedFile = await imageCompression(inputFile, options);
-      return await fileToDataUri(compressedFile);
+      return await imageCompression(inputFile, options);
     } catch (error) {
       console.error('Image compression failed:', error);
-      // Re-throw a more user-friendly error message
       throw new Error('Failed to compress image. The file might be corrupted or in an unsupported format.');
     }
   };
   
   const handleProcessReceipt = async () => {
     if (!file) {
-        toast({ title: 'No File Selected', description: 'Please select an image file to process.', variant: 'destructive'});
-        return;
+      toast({ title: 'No File Selected', description: 'Please select an image file to process.', variant: 'destructive'});
+      return;
     }
-
+  
     startExtractingTransition(async () => {
       try {
-        const dataUri = await compressAndGetDataUri(file);
+        const compressedFile = await compressImage(file);
+        const dataUri = await fileToDataUri(compressedFile);
+        
         const result = await extractReceiptDataAction({ photoDataUri: dataUri });
-
+  
         if (result && result.data) {
-          setReceiptData({
-            merchant: result.data.merchant || '',
-            amount: result.data.amount || 0,
-            date: result.data.date || new Date().toISOString().split('T')[0],
-            category: result.data.category || 'Other',
-            description: result.data.description || '',
-            isBusinessExpense: result.data.isBusinessExpense || false,
-            taxCategory: result.data.taxCategory,
-            items: result.data.items || [],
-          });
+          // Create a full receipt object, providing defaults for any missing fields
+          const aiData = result.data;
+          const fullReceiptData: EditableReceiptData = {
+            merchant: aiData.merchant || 'Unknown Merchant',
+            amount: aiData.amount || 0,
+            date: aiData.date || new Date().toISOString().split('T')[0],
+            category: aiData.category || 'Other',
+            description: aiData.description || '',
+            isBusinessExpense: aiData.isBusinessExpense || false,
+            taxCategory: aiData.taxCategory,
+            items: aiData.items || [],
+          };
+          setReceiptData(fullReceiptData);
           setIsConfirming(true);
         } else {
           toast({
@@ -160,17 +163,10 @@ export function UploadForm({ user, receiptCount }: { user: User; receiptCount: n
     
     startSavingTransition(async () => {
       try {
-        let imageDataUri = '';
-
-        // If a file was part of the original submission, compress it for saving.
-        if (file) {
-          imageDataUri = await compressAndGetDataUri(file);
-        }
-
+        // The image is no longer saved, only the text data.
         const receiptToSave: Omit<Receipt, 'id'> = {
           ...validated.data,
           description: validated.data.description || '',
-          imageUrl: imageDataUri,
         };
 
         await addReceipt(user.uid, receiptToSave);

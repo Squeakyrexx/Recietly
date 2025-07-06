@@ -30,7 +30,6 @@ export type Receipt = {
   date: string; // Storing as YYYY-MM-DD string
   category: Category;
   description: string;
-  imageUrl?: string; // Optional: receipts from manual entry may not have an image
   isBusinessExpense: boolean;
   taxCategory?: TaxCategory;
   items?: LineItem[];
