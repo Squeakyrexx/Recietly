@@ -2,7 +2,6 @@
 'use client';
 
 import { useState, useTransition, useEffect } from 'react';
-import imageCompression from 'browser-image-compression';
 import { extractReceiptDataAction, revalidateAllAction } from '@/lib/actions';
 import { addReceipt } from '@/lib/mock-data';
 import { useToast } from '@/hooks/use-toast';
@@ -147,6 +146,8 @@ export function UploadForm({ user, receiptCount }: { user: User; receiptCount: n
         let imageDataUri: string;
 
         if (file) {
+            // Dynamically import here to avoid SSR issues
+            const imageCompression = (await import('browser-image-compression')).default;
             // If there's a file, compress it
             const options = {
               maxSizeMB: 0.8, // Set max size to 0.8MB to be safe for Firestore's 1MB limit
