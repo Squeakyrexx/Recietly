@@ -195,74 +195,78 @@ export default function DashboardPage() {
         <p className="text-muted-foreground">A summary of your spending habits.</p>
       </header>
 
-      <Tabs defaultValue="overview" className="space-y-4">
-        <TabsList>
-            <TabsTrigger value="overview"><LayoutDashboard className="mr-2 h-4 w-4"/>Overview</TabsTrigger>
-            <TabsTrigger value="calendar"><CalendarIcon className="mr-2 h-4 w-4"/>Calendar</TabsTrigger>
-        </TabsList>
-        <TabsContent value="overview" className="space-y-4">
-          <div className="flex justify-end">
-            <div className="w-full sm:w-auto">
-                <Select value={dateRange} onValueChange={(value: DateRange) => setDateRange(value)}>
-                    <SelectTrigger className="w-full sm:w-[180px]">
-                        <SelectValue placeholder="Select date range" />
-                    </SelectTrigger>
-                    <SelectContent>
-                        {dateRangeOptions.map(option => (
-                            <SelectItem key={option.value} value={option.value}>
-                                {option.label}
-                            </SelectItem>
-                        ))}
-                    </SelectContent>
-                </Select>
+      <div className="space-y-6">
+        <Tabs defaultValue="overview" className="space-y-4">
+          <TabsList>
+              <TabsTrigger value="overview"><LayoutDashboard className="mr-2 h-4 w-4"/>Overview</TabsTrigger>
+              <TabsTrigger value="calendar"><CalendarIcon className="mr-2 h-4 w-4"/>Calendar</TabsTrigger>
+          </TabsList>
+          <TabsContent value="overview" className="space-y-4">
+            <div className="flex justify-end">
+              <div className="w-full sm:w-auto">
+                  <Select value={dateRange} onValueChange={(value: DateRange) => setDateRange(value)}>
+                      <SelectTrigger className="w-full sm:w-[180px]">
+                          <SelectValue placeholder="Select date range" />
+                      </SelectTrigger>
+                      <SelectContent>
+                          {dateRangeOptions.map(option => (
+                              <SelectItem key={option.value} value={option.value}>
+                                  {option.label}
+                              </SelectItem>
+                          ))}
+                      </SelectContent>
+                  </Select>
+              </div>
             </div>
-          </div>
-          <div className="grid grid-cols-1 gap-6 md:grid-cols-2 lg:grid-cols-3">
+            <div className="grid grid-cols-1 gap-6 md:grid-cols-2 lg:grid-cols-3">
+              {isLoading ? (
+                <>
+                  <div className="lg:col-span-1"><Skeleton className="h-32 rounded-lg" /></div>
+                  <div className="lg:col-span-2"><Skeleton className="h-32 rounded-lg" /></div>
+                  <div className="lg:col-span-2"><Skeleton className="h-[400px] rounded-lg" /></div>
+                  <div className="lg:col-span-1"><Skeleton className="h-[400px] rounded-lg" /></div>
+                  <div className="lg:col-span-3"><Skeleton className="h-48 rounded-lg" /></div>
+                </>
+              ) : (
+                <>
+                  <div className="lg:col-span-1">
+                    <TotalSpendingCard 
+                      total={filteredData.totalSpending} 
+                      title={cardTitle} 
+                      previousTotal={showComparison ? filteredData.previousTotalSpending : undefined}
+                    />
+                  </div>
+                  <div className="lg:col-span-2">
+                    <BudgetSummary budgets={budgets!} spending={spendingThisMonth!} />
+                  </div>
+                  <div className="lg:col-span-2">
+                    <CategorySpendingChart data={filteredData.spendingByCategoryWithComparison} showComparison={showComparison} />
+                  </div>
+                  <div className="lg:col-span-1">
+                    <TopSpendingCard data={filteredData.spendingByCategory} />
+                  </div>
+                  <div className="lg:col-span-3">
+                    <AiInsights receiptsForInsight={filteredData.receipts} />
+                  </div>
+                </>
+              )}
+            </div>
+          </TabsContent>
+          <TabsContent value="calendar">
             {isLoading ? (
-              <>
-                <div className="lg:col-span-1"><Skeleton className="h-32 rounded-lg" /></div>
-                <div className="lg:col-span-2"><Skeleton className="h-32 rounded-lg" /></div>
-                <div className="lg:col-span-2"><Skeleton className="h-[400px] rounded-lg" /></div>
-                <div className="lg:col-span-1"><Skeleton className="h-[400px] rounded-lg" /></div>
-                <div className="lg:col-span-3"><Skeleton className="h-48 rounded-lg" /></div>
-              </>
+              <Card>
+                  <CardContent className="p-6">
+                    <Skeleton className="h-[520px] w-full" />
+                  </CardContent>
+               </Card>
             ) : (
-              <>
-                <div className="lg:col-span-1">
-                  <TotalSpendingCard 
-                    total={filteredData.totalSpending} 
-                    title={cardTitle} 
-                    previousTotal={showComparison ? filteredData.previousTotalSpending : undefined}
-                  />
-                </div>
-                <div className="lg:col-span-2">
-                  <BudgetSummary budgets={budgets!} spending={spendingThisMonth!} />
-                </div>
-                <div className="lg:col-span-2">
-                  <CategorySpendingChart data={filteredData.spendingByCategoryWithComparison} showComparison={showComparison} />
-                </div>
-                <div className="lg:col-span-1">
-                  <TopSpendingCard data={filteredData.spendingByCategory} />
-                </div>
-                <div className="lg:col-span-3">
-                  <AiInsights receiptsForInsight={filteredData.receipts} />
-                </div>
-              </>
+              <InteractiveCalendarView receipts={allReceipts!} setAllReceipts={setAllReceipts} />
             )}
-          </div>
-        </TabsContent>
-        <TabsContent value="calendar">
-          {isLoading ? (
-            <Card>
-                <CardContent className="p-6">
-                  <Skeleton className="h-[520px] w-full" />
-                </CardContent>
-             </Card>
-          ) : (
-            <InteractiveCalendarView receipts={allReceipts!} setAllReceipts={setAllReceipts} />
-          )}
-        </TabsContent>
-      </Tabs>
+          </TabsContent>
+        </Tabs>
+      </div>
     </div>
   );
 }
+
+    

@@ -1,3 +1,4 @@
+
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { type SpendingByCategory } from "@/lib/types";
 import { DollarSign, TrendingUp, TrendingDown } from "lucide-react";
@@ -74,3 +75,5 @@ export function TopSpendingCard({ data }: { data: SpendingByCategory[] }) {
         </Card>
     );
 }
+
+    
