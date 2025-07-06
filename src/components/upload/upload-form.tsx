@@ -16,7 +16,6 @@ import { z } from 'zod';
 import { Card, CardHeader, CardTitle, CardDescription, CardContent } from '@/components/ui/card';
 import { useAuth } from '@/context/auth-context';
 import { Label } from '@/components/ui/label';
-import imageCompression from 'browser-image-compression';
 
 type EditableReceiptData = ExtractedReceiptData & { isBusinessExpense?: boolean; taxCategory?: TaxCategory; items?: LineItem[] };
 
@@ -77,20 +76,6 @@ export function UploadForm({ user, receiptCount }: { user: User; receiptCount: n
     }
   };
   
-  const compressImage = async (inputFile: File): Promise<File> => {
-    try {
-      const options = {
-        maxSizeMB: 0.7, // Target size under 1MB DB limit
-        maxWidthOrHeight: 1920,
-        useWebWorker: true,
-      };
-      return await imageCompression(inputFile, options);
-    } catch (error) {
-      console.error('Image compression failed:', error);
-      throw new Error('Failed to compress image. The file might be corrupted or in an unsupported format.');
-    }
-  };
-  
   const handleProcessReceipt = async () => {
     if (!file) {
       toast({ title: 'No File Selected', description: 'Please select an image file to process.', variant: 'destructive'});
@@ -99,13 +84,11 @@ export function UploadForm({ user, receiptCount }: { user: User; receiptCount: n
   
     startExtractingTransition(async () => {
       try {
-        const compressedFile = await compressImage(file);
-        const dataUri = await fileToDataUri(compressedFile);
+        const dataUri = await fileToDataUri(file);
         
         const result = await extractReceiptDataAction({ photoDataUri: dataUri });
   
         if (result && result.data) {
-          // Create a full receipt object, providing defaults for any missing fields
           const aiData = result.data;
           const fullReceiptData: EditableReceiptData = {
             merchant: aiData.merchant || 'Unknown Merchant',
@@ -163,8 +146,8 @@ export function UploadForm({ user, receiptCount }: { user: User; receiptCount: n
     
     startSavingTransition(async () => {
       try {
-        // **FIX:** Explicitly create the object to be saved, ensuring ONLY text data is included.
-        // This prevents any image data from being sent to the database.
+        // This is the definitive fix. We manually construct a clean object
+        // containing ONLY the text data. The image is never included.
         const receiptToSave: Omit<Receipt, 'id'> = {
           merchant: validated.data.merchant,
           amount: validated.data.amount,

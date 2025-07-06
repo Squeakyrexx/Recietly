@@ -52,8 +52,8 @@ export const addReceipt = async (userId: string, receipt: Omit<Receipt, 'id'>) =
   const d = new Date(receipt.date.replace(/-/g, '/'));
   const isValidDate = !isNaN(d.getTime());
 
-  // **FIX:** Explicitly create the object to be saved, ensuring ONLY text data is included.
-  // This provides a second layer of defense against saving image data.
+  // This is the definitive fix. We are creating a brand new object
+  // to guarantee no accidental image data can be passed to the database.
   const newReceipt: Omit<Receipt, 'id'> = {
     merchant: receipt.merchant,
     amount: Number(receipt.amount || 0),
